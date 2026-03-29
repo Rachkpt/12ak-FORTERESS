@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12ak_H4ck Forteresse — SOC Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+:root{
+  --bg:#04090c;--bg2:#071217;--bg3:#091a22;
+  --panel:rgba(6,15,20,0.96);
+  --teal:#00d4aa;--teal2:#00a882;--teal3:#005544;--teal4:#002a22;
+  --amber:#ffaa00;--amber2:#cc8800;
+  --red:#ff3355;--red2:#cc1133;
+  --cyan:#00ccff;--purple:#aa66ff;--green:#44ff88;--blue:#3388ff;
+  --dim:#1a2e35;--text:#c8e8e0;--text2:#7ab8a8;
+  --border:rgba(0,212,170,0.1);--border2:rgba(0,212,170,0.25);
+  --fh:'Orbitron',sans-serif;--fb:'Rajdhani',sans-serif;--fm:'Share Tech Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);font-size:13px;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,212,170,0.02) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,212,170,0.02) 1px,transparent 1px);background-size:28px 28px;}
+.scan{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);}
+
+/* ═══ HEADER ═══ */
+#hdr{position:fixed;top:0;left:0;right:0;height:52px;z-index:200;
+  background:rgba(4,9,12,0.98);border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+  box-shadow:0 2px 24px rgba(0,0,0,0.6);}
+.hlogo{display:flex;align-items:center;gap:10px;font-family:var(--fh);font-size:14px;font-weight:900;
+  color:var(--teal);letter-spacing:2px;text-shadow:0 0 18px rgba(0,212,170,0.4);}
+.hlogo .acc{color:var(--amber);}
+.hlogo svg{width:28px;height:28px;}
+.hsub{font-family:var(--fm);font-size:7px;color:var(--text2);letter-spacing:3px;opacity:0.5;margin-top:1px;}
+.hstats{display:flex;gap:2px;}
+.hs{display:flex;flex-direction:column;align-items:center;padding:0 12px;border-right:1px solid var(--border);cursor:default;}
+.hs:last-child{border:none;}
+.hs-v{font-family:var(--fh);font-size:17px;font-weight:700;line-height:1;}
+.hs-l{font-family:var(--fm);font-size:7px;opacity:0.45;letter-spacing:2px;margin-top:1px;}
+.hs.crit .hs-v{color:var(--red);text-shadow:0 0 8px rgba(255,51,85,0.5);}
+.hs.warn .hs-v{color:var(--amber);}
+.hs.evt  .hs-v{color:var(--cyan);}
+.hs.blk  .hs-v{color:var(--purple);}
+.hs.agt  .hs-v{color:var(--teal);}
+.hrgt{display:flex;align-items:center;gap:8px;}
+.threat{display:flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border2);border-radius:2px;
+  background:rgba(0,212,170,0.03);font-family:var(--fm);font-size:8px;letter-spacing:2px;}
+.tbar{width:50px;height:3px;background:var(--dim);border-radius:2px;overflow:hidden;}
+.tfill{height:100%;background:linear-gradient(90deg,var(--teal),var(--amber));border-radius:2px;transition:width 1.5s;}
+.tval{color:var(--amber);font-weight:700;}
+/* WS indicator */
+.ws-ind{display:flex;align-items:center;gap:4px;font-family:var(--fm);font-size:8px;letter-spacing:1px;}
+.ws-d{width:6px;height:6px;border-radius:50%;background:var(--dim);transition:all 0.5s;}
+.ws-d.on{background:var(--teal);box-shadow:0 0 6px var(--teal);animation:pulse 2s infinite;}
+.ws-d.err{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+/* Nav */
+.nav{display:flex;gap:2px;}
+.ntab{padding:6px 14px;font-family:var(--fm);font-size:9px;letter-spacing:1px;
+  background:transparent;border:1px solid transparent;color:var(--text2);cursor:pointer;border-radius:2px;transition:all 0.2s;}
+.ntab:hover{border-color:var(--border2);color:var(--teal);}
+.ntab.on{border-color:var(--teal2);color:var(--teal);background:rgba(0,212,170,0.06);}
+.hclock{font-family:var(--fm);font-size:11px;color:var(--amber);letter-spacing:2px;}
+.logout{padding:4px 10px;font-family:var(--fm);font-size:8px;letter-spacing:1px;
+  background:transparent;border:1px solid rgba(255,51,85,0.25);color:rgba(255,51,85,0.5);
+  cursor:pointer;border-radius:2px;transition:all 0.2s;}
+.logout:hover{border-color:var(--red);color:var(--red);background:rgba(255,51,85,0.07);}
+
+/* ═══ PAGES ═══ */
+.page{position:fixed;top:52px;left:0;right:0;bottom:26px;z-index:10;overflow:hidden;display:none;padding:5px;gap:5px;}
+.page.on{display:grid;}
+
+/* ═══ PANEL ═══ */
+.pnl{background:var(--panel);border:1px solid var(--border);border-radius:3px;
+  display:flex;flex-direction:column;overflow:hidden;position:relative;min-height:0;}
+.pnl::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--teal2),transparent);opacity:0.35;}
+.ptitle{font-family:var(--fh);font-size:8px;font-weight:700;letter-spacing:3px;color:var(--teal2);
+  padding:7px 11px 5px;border-bottom:1px solid var(--border);background:rgba(0,212,170,0.02);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.ptl{display:flex;align-items:center;gap:7px;}
+.pd{width:5px;height:5px;border-radius:50%;background:var(--teal);box-shadow:0 0 4px var(--teal);}
+.pd.r{background:var(--red);box-shadow:0 0 4px var(--red);}
+.pd.a{background:var(--amber);box-shadow:0 0 4px var(--amber);}
+.pcnt{font-family:var(--fm);font-size:8px;padding:1px 5px;background:var(--teal4);color:var(--teal2);border-radius:2px;}
+.pbody{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px;scrollbar-width:thin;scrollbar-color:var(--teal3) transparent;}
+.pbody::-webkit-scrollbar{width:3px;}
+.pbody::-webkit-scrollbar-thumb{background:var(--teal3);}
+
+/* ═══ PAGE 1 — OVERVIEW ═══ */
+#p1{grid-template-columns:300px 1fr 280px;grid-template-rows:140px 1fr;grid-template-areas:"sys sys agents" "map map agents";}
+.area-sys{grid-area:sys;}
+.area-map{grid-area:map;}
+.area-agents{grid-area:agents;}
+
+/* ── Gauges système ── */
+.sys-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px;}
+.gauge-box{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.gauge-wrap{position:relative;width:72px;height:72px;}
+.gauge-svg{width:72px;height:72px;transform:rotate(-90deg);}
+.gauge-bg{fill:none;stroke:var(--dim);stroke-width:8;}
+.gauge-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1.2s ease;}
+.gauge-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.gauge-num{font-family:var(--fh);font-size:14px;font-weight:700;line-height:1;}
+.gauge-unit{font-family:var(--fm);font-size:8px;opacity:0.5;letter-spacing:1px;}
+.gauge-lbl{font-family:var(--fm);font-size:9px;letter-spacing:2px;color:var(--text2);opacity:0.7;}
+.gauge-sub{font-family:var(--fm);font-size:8px;color:var(--text2);opacity:0.45;text-align:center;}
+
+/* Disk bars */
+.disk-section{padding:6px 10px;}
+.disk-bar-row{margin-bottom:6px;}
+.disk-bar-hdr{display:flex;justify-content:space-between;font-family:var(--fm);font-size:8px;opacity:0.6;margin-bottom:3px;}
+.disk-bar-track{height:5px;background:var(--dim);border-radius:3px;overflow:hidden;}
+.disk-bar-fill{height:100%;border-radius:3px;transition:width 1.2s;}
+
+/* ── Agent cards (sidebar) ── */
+.agcard{border:1px solid var(--border);border-radius:2px;padding:9px;margin-bottom:6px;
+  background:rgba(0,212,170,0.015);cursor:pointer;transition:all 0.15s;position:relative;}
+.agcard:hover{border-color:var(--teal3);background:rgba(0,212,170,0.03);}
+.agcard.crit{border-color:rgba(255,51,85,0.45);background:rgba(255,51,85,0.035);}
+.agcard.warn{border-color:rgba(255,170,0,0.35);background:rgba(255,170,0,0.025);}
+.agcard.live{border-color:rgba(0,212,170,0.35);}
+.ag-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.ag-name{font-family:var(--fh);font-size:10px;font-weight:700;color:var(--text);}
+.ag-badges{display:flex;gap:4px;}
+.badge{font-family:var(--fm);font-size:7px;padding:1px 5px;border-radius:1px;font-weight:700;letter-spacing:1px;}
+.badge.crit{background:rgba(255,51,85,0.15);color:var(--red);border:1px solid rgba(255,51,85,0.35);animation:blnk 1s step-end infinite;}
+.badge.warn{background:rgba(255,170,0,0.12);color:var(--amber);border:1px solid rgba(255,170,0,0.3);}
+.badge.ok{background:rgba(0,212,170,0.08);color:var(--teal);border:1px solid rgba(0,212,170,0.2);}
+.badge.live{background:rgba(0,212,170,0.06);color:var(--teal);border:1px solid rgba(0,212,170,0.15);}
+@keyframes blnk{50%{opacity:0.4;}}
+.ag-cpu-ram{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:5px 0;}
+.mini-bar-row{display:flex;align-items:center;gap:5px;}
+.mini-bar-lbl{font-family:var(--fm);font-size:7px;color:var(--text2);opacity:0.5;width:28px;}
+.mini-bar{flex:1;height:3px;background:var(--dim);border-radius:2px;overflow:hidden;}
+.mini-bar-fill{height:100%;border-radius:2px;transition:width 1s;}
+.mini-bar-val{font-family:var(--fm);font-size:7px;width:28px;text-align:right;}
+.ag-counters{display:flex;gap:8px;margin-top:5px;}
+.ag-cnt{font-family:var(--fm);font-size:8px;color:var(--text2);opacity:0.5;}
+.ag-cnt span{opacity:0.9;}
+.ag-actions{display:flex;gap:4px;margin-top:7px;}
+.abtn{padding:4px 10px;font-family:var(--fm);font-size:8px;letter-spacing:1px;border-radius:2px;
+  cursor:pointer;border:1px solid;transition:all 0.15s;font-weight:700;}
+.abtn.kill{border-color:rgba(255,51,85,0.35);color:var(--red);background:rgba(255,51,85,0.06);}
+.abtn.kill:hover{background:rgba(255,51,85,0.18);border-color:var(--red);}
+.abtn.info{border-color:var(--border2);color:var(--teal2);background:transparent;}
+.abtn.info:hover{background:rgba(0,212,170,0.07);}
+
+/* ═══ PAGE 2 — RÉSEAU ═══ */
+#p2{grid-template-columns:1fr 1fr;grid-template-rows:1fr 180px;}
+
+/* IP type tags */
+.iptag{font-family:var(--fm);font-size:7px;padding:1px 5px;border-radius:1px;font-weight:700;letter-spacing:1px;display:inline-block;}
+.iptag.pub{background:rgba(255,170,0,0.12);color:var(--amber);border:1px solid rgba(255,170,0,0.3);}
+.iptag.prv{background:rgba(0,204,255,0.08);color:var(--cyan);border:1px solid rgba(0,204,255,0.25);}
+.iptag.loc{background:rgba(0,212,170,0.06);color:var(--teal);border:1px solid rgba(0,212,170,0.18);}
+.iptag.sus{background:rgba(255,51,85,0.14);color:var(--red);border:1px solid rgba(255,51,85,0.4);animation:blnk 0.7s step-end infinite;}
+.proto-t{font-family:var(--fm);font-size:7px;padding:1px 5px;border-radius:1px;font-weight:700;}
+.proto-t.TCP{background:rgba(0,204,255,0.08);color:var(--cyan);border:1px solid rgba(0,204,255,0.2);}
+.proto-t.UDP{background:rgba(170,102,255,0.08);color:var(--purple);border:1px solid rgba(170,102,255,0.2);}
+.bblk{padding:2px 6px;font-family:var(--fm);font-size:7px;border:1px solid rgba(255,51,85,0.3);
+  color:var(--red);background:rgba(255,51,85,0.05);cursor:pointer;border-radius:1px;transition:all 0.15s;}
+.bblk:hover{background:rgba(255,51,85,0.16);border-color:var(--red);}
+.conn-table{width:100%;border-collapse:collapse;font-size:9px;}
+.conn-table th{font-family:var(--fh);font-size:6px;letter-spacing:2px;color:var(--teal3);
+  padding:4px 7px;text-align:left;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:rgba(4,9,12,0.98);}
+.conn-table td{padding:3px 7px;border-bottom:1px solid rgba(0,212,170,0.04);vertical-align:middle;}
+.conn-table tr:hover td{background:rgba(0,212,170,0.025);}
+.conn-table tr.sus td{background:rgba(255,51,85,0.04);}
+.conn-table tr.sus:hover td{background:rgba(255,51,85,0.08);}
+/* Filters */
+.filters{display:flex;gap:3px;flex-wrap:wrap;padding:4px 7px;border-bottom:1px solid var(--border);
+  background:rgba(0,212,170,0.015);flex-shrink:0;}
+.fb{font-family:var(--fm);font-size:7px;letter-spacing:1px;padding:2px 7px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);cursor:pointer;border-radius:1px;transition:all 0.15s;}
+.fb:hover{border-color:var(--teal2);color:var(--teal);}
+.fb.on{background:var(--teal4);border-color:var(--teal2);color:var(--teal);}
+.fb.r{border-color:rgba(255,51,85,0.25);color:rgba(255,51,85,0.6);}
+.fb.r.on{background:rgba(255,51,85,0.08);border-color:var(--red);color:var(--red);}
+.fb.a{border-color:rgba(255,170,0,0.25);color:rgba(255,170,0,0.6);}
+.fb.a.on{background:rgba(255,170,0,0.06);border-color:var(--amber);color:var(--amber);}
+.fb.b{border-color:rgba(0,204,255,0.25);color:rgba(0,204,255,0.6);}
+.fb.b.on{background:rgba(0,204,255,0.06);border-color:var(--cyan);color:var(--cyan);}
+
+/* ═══ PAGE 3 — PROCESSUS ═══ */
+#p3{grid-template-columns:1fr 300px;grid-template-rows:1fr;}
+.proc-table{width:100%;border-collapse:collapse;font-size:9px;}
+.proc-table th{font-family:var(--fh);font-size:6px;letter-spacing:2px;color:var(--teal3);
+  padding:4px 7px;text-align:left;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:rgba(4,9,12,0.98);cursor:pointer;}
+.proc-table th:hover{color:var(--teal);}
+.proc-table td{padding:3px 7px;border-bottom:1px solid rgba(0,212,170,0.04);vertical-align:middle;font-family:var(--fm);}
+.proc-table tr:hover td{background:rgba(0,212,170,0.025);}
+.proc-table tr.sus td{background:rgba(255,51,85,0.04);}
+.proc-table tr.sus:hover td{background:rgba(255,51,85,0.08);}
+.cpu-bar{display:flex;align-items:center;gap:5px;}
+.cpu-track{flex:1;height:4px;background:var(--dim);border-radius:2px;overflow:hidden;min-width:40px;}
+.cpu-fill{height:100%;border-radius:2px;transition:width 0.8s;}
+.pkill{padding:1px 6px;font-family:var(--fm);font-size:7px;border:1px solid rgba(255,51,85,0.3);
+  color:var(--red);background:rgba(255,51,85,0.05);cursor:pointer;border-radius:1px;transition:all 0.15s;font-weight:700;}
+.pkill:hover{background:rgba(255,51,85,0.18);border-color:var(--red);}
+
+/* Proc detail panel */
+.proc-detail-empty{padding:20px;text-align:center;font-family:var(--fm);font-size:9px;opacity:0.3;letter-spacing:2px;}
+
+/* ═══ PAGE 4 — ALERTES ═══ */
+#p4{grid-template-columns:1fr 300px;grid-template-rows:1fr 140px;}
+
+/* Alert cards */
+.acard{border-left:3px solid var(--teal3);padding:8px 10px;margin-bottom:3px;
+  background:rgba(0,212,170,0.025);border-radius:0 2px 2px 0;cursor:pointer;
+  transition:background 0.12s;animation:slideIn 0.25s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-6px);}to{opacity:1;transform:translateX(0);}}
+.acard:hover{background:rgba(0,212,170,0.05);}
+.acard.CRITICAL{border-left-color:var(--red);background:rgba(255,51,85,0.045);}
+.acard.WARNING{border-left-color:var(--amber);background:rgba(255,170,0,0.035);}
+.acard.CRITICAL:hover{background:rgba(255,51,85,0.08);}
+.acard.WARNING:hover{background:rgba(255,170,0,0.065);}
+.ah{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.abadge{font-family:var(--fm);font-size:7px;padding:1px 5px;border-radius:1px;font-weight:700;letter-spacing:1px;}
+.abadge.CRITICAL{background:var(--red2);color:#fff;}
+.abadge.WARNING{background:var(--amber2);color:#000;}
+.abadge.INFO{background:var(--teal4);color:var(--teal);border:1px solid var(--teal3);}
+.acat{font-family:var(--fm);font-size:7px;padding:1px 4px;border:1px solid var(--border);color:var(--text2);border-radius:1px;}
+.acat.NET_TCP,.acat.NET_LIST{border-color:rgba(0,204,255,0.25);color:var(--cyan);}
+.acat.NET_UDP{border-color:rgba(170,102,255,0.25);color:var(--purple);}
+.acat.FILE{border-color:rgba(255,170,0,0.25);color:var(--amber);}
+.acat.PROCESS,.acat.PROC_LIST{border-color:rgba(0,212,170,0.25);color:var(--teal);}
+.acat.DEFENDER{border-color:rgba(255,51,85,0.25);color:var(--red);}
+.acat.RESPONSE{border-color:rgba(170,102,255,0.25);color:var(--purple);}
+.acat.SYSINFO{border-color:rgba(51,136,255,0.25);color:var(--blue);}
+.atime{font-family:var(--fm);font-size:7px;color:var(--text2);opacity:0.4;margin-left:auto;}
+.acnt{font-family:var(--fm);font-size:7px;color:var(--amber);background:rgba(255,170,0,0.08);padding:1px 4px;border-radius:1px;}
+.atitle{font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px;word-break:break-all;}
+.acard.CRITICAL .atitle{color:#ff8899;}
+.acard.WARNING .atitle{color:#ffcc66;}
+.adetail{font-family:var(--fm);font-size:8px;color:var(--text2);opacity:0.5;word-break:break-all;line-height:1.4;}
+.aagent{font-family:var(--fm);font-size:7px;color:var(--cyan);opacity:0.55;margin-top:3px;}
+
+/* Stats summary boxes */
+.stat-boxes{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;}
+.sbox{background:rgba(0,212,170,0.03);border:1px solid var(--border);border-radius:2px;padding:10px;text-align:center;}
+.sbox-val{font-family:var(--fh);font-size:22px;font-weight:700;}
+.sbox-lbl{font-family:var(--fm);font-size:8px;letter-spacing:2px;opacity:0.5;margin-top:3px;}
+.sbox.crit .sbox-val{color:var(--red);}
+.sbox.warn .sbox-val{color:var(--amber);}
+.sbox.info .sbox-val{color:var(--teal);}
+.sbox.blk  .sbox-val{color:var(--purple);}
+
+/* ═══ PAGE 5 — LOGS ═══ */
+#p5{grid-template-columns:1fr 260px;grid-template-rows:1fr;}
+
+/* ═══ LEAFLET ═══ */
+#lmap{flex:1;min-height:0;}
+.leaflet-container{background:#020c10!important;}
+.leaflet-tile{filter:brightness(0.45) saturate(0.25) hue-rotate(140deg);}
+.leaflet-popup-content-wrapper{background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:2px;box-shadow:0 4px 20px rgba(0,0,0,0.6);}
+.leaflet-popup-tip{background:var(--bg2);}
+.leaflet-popup-content{font-family:var(--fm);font-size:9px;color:var(--text2);}
+.m-agent{width:12px;height:12px;border-radius:50%;background:var(--teal);border:2px solid rgba(0,212,170,0.8);box-shadow:0 0 10px rgba(0,212,170,0.7);}
+.m-threat{width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid rgba(255,51,85,0.8);box-shadow:0 0 8px rgba(255,51,85,0.8);animation:blnk 0.8s step-end infinite;}
+.m-warn{width:9px;height:9px;border-radius:50%;background:var(--amber);border:2px solid rgba(255,170,0,0.8);box-shadow:0 0 7px rgba(255,170,0,0.6);}
+
+/* ═══ KILL MODAL ═══ */
+#kmod{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;display:none;align-items:center;justify-content:center;}
+#kmod.on{display:flex;}
+#kbox{background:var(--bg2);border:1px solid rgba(255,51,85,0.35);border-radius:3px;padding:26px;width:380px;position:relative;}
+#kbox::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);}
+.ktitle{font-family:var(--fh);font-size:10px;color:var(--red);letter-spacing:2px;margin-bottom:14px;}
+.klbl{font-family:var(--fm);font-size:8px;color:var(--text2);letter-spacing:2px;margin-bottom:5px;display:block;}
+.kinp{width:100%;background:rgba(255,51,85,0.03);border:1px solid rgba(255,51,85,0.2);border-radius:2px;
+  padding:9px 11px;font-family:var(--fm);font-size:13px;color:var(--text);outline:none;transition:all 0.2s;}
+.kinp:focus{border-color:var(--red);background:rgba(255,51,85,0.07);}
+.kinfo{font-family:var(--fm);font-size:8px;color:var(--text2);opacity:0.35;margin-top:5px;margin-bottom:18px;}
+.kbtns{display:flex;gap:7px;}
+.kbtn{flex:1;padding:9px;font-family:var(--fm);font-size:9px;letter-spacing:1px;border-radius:2px;cursor:pointer;border:1px solid;font-weight:700;transition:all 0.2s;}
+.kbtn.ok{border-color:var(--red);color:var(--red);background:rgba(255,51,85,0.07);}
+.kbtn.ok:hover{background:rgba(255,51,85,0.18);}
+.kbtn.no{border-color:var(--border2);color:var(--text2);background:transparent;}
+.kbtn.no:hover{border-color:var(--teal2);color:var(--teal);}
+
+/* ═══ DETAIL MODAL ═══ */
+#dmod{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:400;display:none;align-items:center;justify-content:center;}
+#dmod.on{display:flex;}
+#dbox{background:var(--bg2);border:1px solid var(--border2);border-radius:3px;padding:22px;
+  width:560px;max-width:95vw;max-height:80vh;overflow-y:auto;position:relative;}
+#dbox::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);}
+#dbox h2{font-family:var(--fh);font-size:10px;color:var(--teal);letter-spacing:3px;margin-bottom:14px;}
+#dbox pre{background:var(--bg3);border:1px solid var(--border);padding:12px;border-radius:2px;
+  font-family:var(--fm);font-size:8px;color:var(--teal2);line-height:1.7;overflow-x:auto;white-space:pre-wrap;word-break:break-all;}
+.dclose{position:absolute;top:10px;right:12px;background:none;border:1px solid rgba(255,51,85,0.25);
+  color:var(--red);font-family:var(--fm);font-size:8px;padding:2px 9px;cursor:pointer;border-radius:1px;transition:all 0.15s;}
+.dclose:hover{background:rgba(255,51,85,0.12);}
+
+/* ═══ TOAST ═══ */
+#toasts{position:fixed;top:62px;right:14px;z-index:600;display:flex;flex-direction:column;gap:5px;width:300px;pointer-events:none;}
+.toast{padding:9px 12px;border-radius:2px;background:rgba(4,9,12,0.98);border:1px solid var(--border2);
+  font-family:var(--fm);font-size:9px;color:var(--text);box-shadow:0 4px 18px rgba(0,0,0,0.5);
+  animation:tIn 0.25s ease;pointer-events:all;position:relative;overflow:hidden;}
+.toast::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.toast.CRITICAL{border-color:rgba(255,51,85,0.35);} .toast.CRITICAL::before{background:var(--red);}
+.toast.WARNING{border-color:rgba(255,170,0,0.3);}   .toast.WARNING::before{background:var(--amber);}
+.toast.SUCCESS::before,.toast.INFO::before{background:var(--teal);}
+.toast-t{font-weight:700;margin-bottom:2px;}
+.toast.CRITICAL .toast-t{color:#ff8899;}
+.toast.WARNING .toast-t{color:#ffcc66;}
+.toast.SUCCESS .toast-t{color:var(--teal);}
+.toast-b{font-size:8px;opacity:0.55;}
+.tprog{position:absolute;bottom:0;left:0;height:2px;background:var(--teal);animation:tProg 4s linear forwards;}
+.toast.CRITICAL .tprog{background:var(--red);} .toast.WARNING .tprog{background:var(--amber);}
+@keyframes tIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:translateX(0);}}
+@keyframes tProg{from{width:100%;}to{width:0%;}}
+
+/* ═══ STATUSBAR ═══ */
+#sb{position:fixed;bottom:0;left:0;right:0;height:26px;z-index:200;background:rgba(4,9,12,0.98);
+  border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;font-family:var(--fm);font-size:8px;color:var(--text2);letter-spacing:1px;}
+.sbl{display:flex;gap:14px;} .sbr{display:flex;gap:10px;align-items:center;}
+.sbok{color:var(--teal);} .sbt{color:var(--amber);}
+.empty{text-align:center;padding:24px;font-family:var(--fm);font-size:9px;opacity:0.25;letter-spacing:2px;}
+
+/* ═══ BANNIÈRE KILL CHAIN ═══ */
+#killchain-banner{
+  position:fixed;top:52px;left:0;right:0;z-index:500;
+  background:linear-gradient(90deg,rgba(255,0,40,0.95),rgba(180,0,30,0.95));
+  border-bottom:2px solid var(--red);padding:8px 20px;
+  display:none;align-items:center;justify-content:space-between;
+  animation:bannerPulse 0.8s ease-in-out infinite alternate;
+  box-shadow:0 4px 30px rgba(255,0,40,0.6);}
+#killchain-banner.on{display:flex;}
+@keyframes bannerPulse{from{box-shadow:0 4px 20px rgba(255,0,40,0.5);}to{box-shadow:0 4px 40px rgba(255,0,40,0.9);}}
+.kc-icon{font-size:20px;animation:spin 2s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.kc-text{font-family:var(--fh);font-size:11px;font-weight:900;color:#fff;letter-spacing:3px;text-shadow:0 0 10px rgba(255,255,255,0.5);}
+.kc-sub{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,0.7);letter-spacing:1px;margin-top:2px;}
+.kc-close{padding:4px 12px;font-family:var(--fm);font-size:8px;letter-spacing:1px;
+  background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);
+  color:#fff;cursor:pointer;border-radius:2px;transition:all 0.2s;}
+.kc-close:hover{background:rgba(255,255,255,0.25);}
+
+/* ═══ BADGE CORRELATION ═══ */
+.acat.CORRELATION{border-color:rgba(170,102,255,0.6);color:var(--purple);
+  background:rgba(170,102,255,0.12);font-weight:700;
+  animation:corrPulse 1.5s ease-in-out infinite;}
+@keyframes corrPulse{0%,100%{box-shadow:0 0 0 rgba(170,102,255,0);}50%{box-shadow:0 0 8px rgba(170,102,255,0.6);}}
+.acard.CRITICAL.corr{
+  border-left-color:var(--purple);
+  background:linear-gradient(135deg,rgba(170,102,255,0.08),rgba(255,51,85,0.05));
+  box-shadow:inset 0 0 20px rgba(170,102,255,0.05);}
+.abadge.CORR{background:linear-gradient(90deg,rgba(170,102,255,0.3),rgba(255,51,85,0.2));
+  color:#fff;border:1px solid var(--purple);}
+
+/* ═══ PAGE 6 — FICHIERS ═══ */
+#p6{grid-template-columns:1fr 300px;grid-template-rows:1fr;}
+.file-card{padding:8px 10px;margin-bottom:3px;border-radius:2px;
+  border-left:3px solid var(--teal3);background:rgba(0,212,170,0.02);
+  cursor:pointer;transition:background 0.12s;animation:slideIn 0.25s ease;}
+.file-card:hover{background:rgba(0,212,170,0.05);}
+.file-card.WARNING{border-left-color:var(--amber);background:rgba(255,170,0,0.03);}
+.file-card.CRITICAL{border-left-color:var(--red);background:rgba(255,51,85,0.04);}
+.file-card.WARNING:hover{background:rgba(255,170,0,0.07);}
+.file-card.CRITICAL:hover{background:rgba(255,51,85,0.08);}
+.fc-header{display:flex;align-items:center;gap:5px;margin-bottom:4px;}
+.fc-badge{font-family:var(--fm);font-size:7px;padding:1px 6px;border-radius:1px;font-weight:700;letter-spacing:1px;}
+.fc-badge.INFO{background:var(--teal4);color:var(--teal);border:1px solid var(--teal3);}
+.fc-badge.WARNING{background:var(--amber2);color:#000;}
+.fc-badge.CRITICAL{background:var(--red2);color:#fff;}
+.fc-label{font-family:var(--fm);font-size:7px;padding:1px 5px;border:1px solid var(--border);
+  color:var(--text2);border-radius:1px;}
+.fc-label.TELECHARGEMENT{border-color:rgba(0,204,255,0.3);color:var(--cyan);}
+.fc-label.BUREAU{border-color:rgba(255,170,0,0.3);color:var(--amber);}
+.fc-label.DOCUMENTS{border-color:rgba(0,212,170,0.3);color:var(--teal);}
+.fc-label.TEMP{border-color:rgba(255,51,85,0.3);color:var(--red);}
+.fc-time{font-family:var(--fm);font-size:7px;color:var(--text2);opacity:0.4;margin-left:auto;}
+.fc-name{font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px;word-break:break-all;}
+.file-card.CRITICAL .fc-name{color:#ff8899;}
+.file-card.WARNING  .fc-name{color:#ffcc66;}
+.fc-path{font-family:var(--fm);font-size:8px;color:var(--text2);opacity:0.45;word-break:break-all;line-height:1.4;}
+.fc-meta{display:flex;gap:8px;margin-top:3px;}
+.fc-m{font-family:var(--fm);font-size:7px;opacity:0.4;}
+
+/* ═══ IPs BLOQUÉES PANEL ═══ */
+.blk-ip-row{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px;border-bottom:1px solid rgba(170,102,255,0.08);font-family:var(--fm);font-size:9px;}
+.blk-ip-row:hover{background:rgba(170,102,255,0.04);}
+.blk-ip-addr{color:var(--purple);letter-spacing:0.5px;}
+.blk-ip-unblk{padding:2px 8px;font-family:var(--fm);font-size:7px;letter-spacing:1px;
+  border:1px solid rgba(0,212,170,0.3);color:var(--teal);background:rgba(0,212,170,0.04);
+  cursor:pointer;border-radius:1px;transition:all 0.15s;}
+.blk-ip-unblk:hover{background:rgba(0,212,170,0.12);border-color:var(--teal);}
+</style>
+</head>
+<body>
+<div class="scan"></div>
+
+<!-- ═══ HEADER ═══ -->
+<div id="hdr">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="hlogo">
+      <svg viewBox="0 0 32 32" fill="none">
+        <polygon points="16,2 30,9 30,23 16,30 2,23 2,9" stroke="#00d4aa" stroke-width="1.2" fill="rgba(0,212,170,0.05)"/>
+        <circle cx="16" cy="16" r="7" stroke="#00d4aa" stroke-width="1" fill="rgba(0,212,170,0.04)"/>
+        <circle cx="16" cy="16" r="3" fill="#00d4aa"/>
+        <line x1="16" y1="9" x2="16" y2="12" stroke="#00d4aa" stroke-width="1"/>
+        <line x1="16" y1="20" x2="16" y2="23" stroke="#00d4aa" stroke-width="1"/>
+        <line x1="9" y1="16" x2="12" y2="16" stroke="#00d4aa" stroke-width="1"/>
+        <line x1="20" y1="16" x2="23" y2="16" stroke="#00d4aa" stroke-width="1"/>
+      </svg>
+      12ak_<span class="acc">H4ck</span> Forteresse
+    </div>
+    <div><div class="hsub">FORTERESSE____ SOC</div></div>
+  </div>
+
+  <div class="hstats">
+    <div class="hs crit"><div class="hs-v" id="h-crit">0</div><div class="hs-l">CRITIQUE</div></div>
+    <div class="hs warn"><div class="hs-v" id="h-warn">0</div><div class="hs-l">WARNING</div></div>
+    <div class="hs evt"> <div class="hs-v" id="h-evt">0</div> <div class="hs-l">ÉVÉNEMENTS</div></div>
+    <div class="hs blk"> <div class="hs-v" id="h-blk">0</div> <div class="hs-l">BLOQUÉS</div></div>
+    <div class="hs agt"> <div class="hs-v" id="h-agt">0</div> <div class="hs-l">AGENTS</div></div>
+  </div>
+
+  <div class="hrgt">
+    <div class="threat">
+      <span style="opacity:0.6">MENACE</span>
+      <div class="tbar"><div class="tfill" id="tfill" style="width:5%"></div></div>
+      <span class="tval" id="tval">FAIBLE</span>
+    </div>
+    <div class="ws-ind">
+      <div class="ws-d" id="wsd"></div>
+      <span id="wslbl" style="color:var(--text2)">WS...</span>
+    </div>
+    <div class="nav">
+      <button class="ntab on"  onclick="goPage(1,this)">OVERVIEW</button>
+      <button class="ntab" onclick="goPage(2,this)">RÉSEAU</button>
+      <button class="ntab" onclick="goPage(3,this)">PROCESSUS</button>
+      <button class="ntab" onclick="goPage(4,this)">ALERTES</button>
+      <button class="ntab" onclick="goPage(5,this)">LOGS</button>
+      <button class="ntab" onclick="goPage(6,this)">FICHIERS</button>
+    </div>
+    <div class="hclock" id="hclk">00:00:00</div>
+    <button class="logout" onclick="logout()">⏏</button>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- ═══ BANNIÈRE KILL CHAIN ═══ -->
+<div id="killchain-banner">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span class="kc-icon">⚠</span>
+    <div>
+      <div class="kc-text">⚔ KILL CHAIN DÉTECTÉE — ATTAQUE EN COURS</div>
+      <div class="kc-sub" id="kc-detail">Séquence complète Process + C2 + Fichier détectée</div>
+    </div>
+  </div>
+  <button class="kc-close" onclick="closeKillChain()">✕ FERMER</button>
+</div>
+
+<!-- ═══════════ PAGE 1 — OVERVIEW ═══════════ -->
+<div class="page on" id="p1" style="grid-template-columns:300px 1fr 280px;grid-template-rows:155px 1fr;">
+
+  <!-- Système : gauges CPU / RAM + disks -->
+  <div class="pnl" style="grid-column:1/3;grid-row:1;">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd"></div>SYSTÈME — CPU / RAM / DISQUE</div>
+      <span id="sysinfo-agent" style="font-family:var(--fm);font-size:8px;opacity:0.4;">—</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;height:100%;">
+      <!-- Gauges -->
+      <div class="sys-grid" style="grid-template-columns:1fr 1fr;align-items:center;">
+        <!-- CPU -->
+        <div class="gauge-box">
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 72 72">
+              <circle class="gauge-bg" cx="36" cy="36" r="28" stroke-dasharray="176" stroke-dashoffset="0"/>
+              <circle class="gauge-fill" id="g-cpu" cx="36" cy="36" r="28"
+                stroke="#00d4aa" stroke-dasharray="176" stroke-dashoffset="176"/>
+            </svg>
+            <div class="gauge-val">
+              <div class="gauge-num" id="g-cpu-v" style="color:var(--teal)">0</div>
+              <div class="gauge-unit">%</div>
+            </div>
+          </div>
+          <div class="gauge-lbl">CPU</div>
+          <div class="gauge-sub" id="g-cpu-sub">— cœurs</div>
+        </div>
+        <!-- RAM -->
+        <div class="gauge-box">
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 72 72">
+              <circle class="gauge-bg" cx="36" cy="36" r="28" stroke-dasharray="176" stroke-dashoffset="0"/>
+              <circle class="gauge-fill" id="g-ram" cx="36" cy="36" r="28"
+                stroke="#00ccff" stroke-dasharray="176" stroke-dashoffset="176"/>
+            </svg>
+            <div class="gauge-val">
+              <div class="gauge-num" id="g-ram-v" style="color:var(--cyan)">0</div>
+              <div class="gauge-unit">%</div>
+            </div>
+          </div>
+          <div class="gauge-lbl">RAM</div>
+          <div class="gauge-sub" id="g-ram-sub">— / — MB</div>
+        </div>
+      </div>
+      <!-- Disques -->
+      <div class="disk-section" id="disk-bars" style="overflow-y:auto;padding:10px 14px;">
+        <div class="empty" style="padding:10px">CHARGEMENT...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carte Leaflet -->
+  <div class="pnl area-map" style="grid-column:1/3;grid-row:2;">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd a"></div>CARTE CONNEXIONS MONDIALES</div>
+      <span class="pcnt" id="map-cnt">0 IPs</span>
+    </div>
+    <div id="lmap"></div>
+  </div>
+
+  <!-- Agents sidebar -->
+  <div class="pnl" style="grid-column:3;grid-row:1/3;">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd"></div>ENDPOINTS</div>
+      <span class="pcnt" id="ag-cnt">0</span>
+    </div>
+    <div class="pbody" id="ag-list"><div class="empty">EN ATTENTE...</div></div>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 2 — RÉSEAU ═══════════ -->
+<div class="page" id="p2" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 180px;">
+
+  <!-- Connexions publiques -->
+  <div class="pnl">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd a"></div>IPs PUBLIQUES (INTERNET)</div>
+      <span class="pcnt" id="pub-cnt">0</span>
+    </div>
+    <div class="filters" id="pub-filters">
+      <button class="fb on" onclick="setPubFilter('ALL',this)">TOUT</button>
+      <button class="fb r"  onclick="setPubFilter('CRIT',this)">CRITIQUE</button>
+      <button class="fb a"  onclick="setPubFilter('WARN',this)">WARN</button>
+      <button class="fb"    onclick="setPubFilter('TCP',this)">TCP</button>
+      <button class="fb"    onclick="setPubFilter('UDP',this)">UDP</button>
+    </div>
+    <div class="pbody" style="padding:0;">
+      <table class="conn-table">
+        <thead><tr><th>PROTO</th><th>PROCESSUS</th><th>IP PUBLIQUE ↗</th><th>PORT</th><th>ÉTAT</th><th>PID</th><th>ACTION</th></tr></thead>
+        <tbody id="pub-tbody"><tr><td colspan="7" class="empty">EN ATTENTE...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Connexions privées -->
+  <div class="pnl">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd"></div>IPs PRIVÉES (RÉSEAU LOCAL)</div>
+      <span class="pcnt" id="prv-cnt">0</span>
+    </div>
+    <div class="filters">
+      <button class="fb on" onclick="setPrvFilter('ALL',this)">TOUT</button>
+      <button class="fb r"  onclick="setPrvFilter('CRIT',this)">SUSPECT</button>
+      <button class="fb b"  onclick="setPrvFilter('TCP',this)">TCP</button>
+      <button class="fb"    onclick="setPrvFilter('UDP',this)">UDP</button>
+    </div>
+    <div class="pbody" style="padding:0;">
+      <table class="conn-table">
+        <thead><tr><th>PROTO</th><th>PROCESSUS</th><th>IP PRIVÉE ⇄</th><th>PORT</th><th>ÉTAT</th><th>PID</th><th>INFO</th></tr></thead>
+        <tbody id="prv-tbody"><tr><td colspan="7" class="empty">EN ATTENTE...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stats réseau + IPs bloquées -->
+  <div class="pnl" style="grid-column:1/3;display:grid;grid-template-columns:1fr 260px;">
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);border-right:1px solid var(--border);">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--border);">
+        <div style="font-family:var(--fh);font-size:22px;color:var(--amber)" id="ns-total">0</div>
+        <div style="font-family:var(--fm);font-size:8px;opacity:0.4;letter-spacing:1px;margin-top:4px">TOTAL</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--border);">
+        <div style="font-family:var(--fh);font-size:22px;color:var(--red)" id="ns-pub">0</div>
+        <div style="font-family:var(--fm);font-size:8px;opacity:0.4;letter-spacing:1px;margin-top:4px">PUBLIQUES</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--border);">
+        <div style="font-family:var(--fh);font-size:22px;color:var(--cyan)" id="ns-prv">0</div>
+        <div style="font-family:var(--fm);font-size:8px;opacity:0.4;letter-spacing:1px;margin-top:4px">PRIVÉES</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--border);">
+        <div style="font-family:var(--fh);font-size:22px;color:var(--teal)" id="ns-tcp">0</div>
+        <div style="font-family:var(--fm);font-size:8px;opacity:0.4;letter-spacing:1px;margin-top:4px">TCP</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--border);">
+        <div style="font-family:var(--fh);font-size:22px;color:var(--purple)" id="ns-udp">0</div>
+        <div style="font-family:var(--fm);font-size:8px;opacity:0.4;letter-spacing:1px;margin-top:4px">UDP</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-family:var(--fh);font-size:22px;color:var(--red);animation:blnk 1s step-end infinite" id="ns-sus">0</div>
+        <div style="font-family:var(--fm);font-size:8px;opacity:0.4;letter-spacing:1px;margin-top:4px">SUSPECTS</div>
+      </div>
+    </div>
+    <!-- Panel IPs bloquées permanent -->
+    <div style="display:flex;flex-direction:column;min-height:0;">
+      <div style="font-family:var(--fh);font-size:7px;color:var(--purple);letter-spacing:3px;
+        padding:6px 10px;border-bottom:1px solid rgba(170,102,255,0.15);
+        display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <span>⊗ IPs BLOQUÉES</span>
+        <span id="blk-count" style="font-family:var(--fm);font-size:8px;
+          padding:1px 5px;background:rgba(170,102,255,0.1);border-radius:2px;">0</span>
+      </div>
+      <div id="blk-ip-list" style="flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--teal3) transparent;">
+        <div style="text-align:center;padding:12px;font-family:var(--fm);font-size:9px;opacity:0.25;letter-spacing:2px;">
+          AUCUNE IP BLOQUÉE
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 3 — PROCESSUS ═══════════ -->
+<div class="page" id="p3" style="grid-template-columns:1fr 300px;">
+
+  <div class="pnl">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd"></div>PROCESSUS ACTIFS — VRAIS PIDs</div>
+      <span class="pcnt" id="proc-cnt">0</span>
+    </div>
+    <div class="filters">
+      <button class="fb on" onclick="setProcFilter('ALL',this)">TOUT</button>
+      <button class="fb r"  onclick="setProcFilter('SUS',this)">SUSPECTS</button>
+      <button class="fb a"  onclick="setProcFilter('CPU',this)">▲ CPU</button>
+      <button class="fb"    onclick="setProcFilter('MEM',this)">▲ RAM</button>
+    </div>
+    <div class="pbody" style="padding:0;">
+      <table class="proc-table" id="proc-table">
+        <thead><tr>
+          <th onclick="sortProcs('name')">NOM ↕</th>
+          <th onclick="sortProcs('pid')">PID ↕</th>
+          <th onclick="sortProcs('cpu')" style="min-width:100px">CPU % ↕</th>
+          <th onclick="sortProcs('mem')">RAM % ↕</th>
+          <th>ÉTAT</th>
+          <th>USER</th>
+          <th>ACTION</th>
+        </tr></thead>
+        <tbody id="proc-tbody"><tr><td colspan="7" class="empty">EN ATTENTE...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Détail processus sélectionné -->
+  <div class="pnl">
+    <div class="ptitle"><div class="ptl"><div class="pd a"></div>DÉTAIL PROCESSUS</div></div>
+    <div class="pbody" id="proc-detail">
+      <div class="proc-detail-empty">Clique sur un processus<br>pour voir ses détails</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 4 — ALERTES ═══════════ -->
+<div class="page" id="p4" style="grid-template-columns:1fr 260px;grid-template-rows:1fr;">
+
+  <div class="pnl">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd r" id="alert-dot"></div>ALERTES EN TEMPS RÉEL</div>
+      <span class="pcnt" id="alert-cnt">0</span>
+    </div>
+    <div class="filters">
+      <button class="fb on" onclick="setAlertFilter('ALL',this)">TOUT</button>
+      <button class="fb r"  onclick="setAlertFilter('CRITICAL',this)">CRITIQUE</button>
+      <button class="fb a"  onclick="setAlertFilter('WARNING',this)">WARNING</button>
+      <button class="fb"    onclick="setAlertFilter('PROCESS',this)">PROCESS</button>
+      <button class="fb b"  onclick="setAlertFilter('NET',this)">RÉSEAU</button>
+      <button class="fb"    onclick="setAlertFilter('FILE',this)">FICHIERS</button>
+      <button class="fb" style="border-color:rgba(170,102,255,0.3);color:rgba(170,102,255,0.7);"
+        onclick="setAlertFilter('CORRELATION',this)">⚡ SIEM</button>
+    </div>
+    <div class="pbody" id="alert-list"><div class="empty">AUCUNE ALERTE</div></div>
+  </div>
+
+  <!-- Stats sidebar -->
+  <div class="pnl">
+    <div class="ptitle"><div class="ptl"><div class="pd"></div>STATISTIQUES</div></div>
+    <div class="pbody">
+      <div class="stat-boxes">
+        <div class="sbox crit"><div class="sbox-val" id="s-crit">0</div><div class="sbox-lbl">CRITIQUE</div></div>
+        <div class="sbox warn"><div class="sbox-val" id="s-warn">0</div><div class="sbox-lbl">WARNING</div></div>
+        <div class="sbox info"><div class="sbox-val" id="s-info">0</div><div class="sbox-lbl">INFO</div></div>
+        <div class="sbox blk"> <div class="sbox-val" id="s-blk">0</div> <div class="sbox-lbl">BLOQUÉS</div></div>
+      </div>
+      <div style="margin-top:10px;padding:0 5px;">
+        <div style="font-family:var(--fm);font-size:8px;opacity:0.4;letter-spacing:2px;margin-bottom:8px;">CATÉGORIES</div>
+        <div id="cat-bars"></div>
+      </div>
+      <div style="margin-top:12px;padding:0 5px;">
+        <button style="width:100%;padding:8px;font-family:var(--fm);font-size:9px;letter-spacing:2px;
+          background:rgba(0,212,170,0.04);border:1px solid var(--border2);color:var(--teal);cursor:pointer;border-radius:2px;transition:all 0.2s;margin-bottom:5px;"
+          onclick="fallbackFetch()">↺ ACTUALISER</button>
+        <button style="width:100%;padding:8px;font-family:var(--fm);font-size:9px;letter-spacing:2px;
+          background:rgba(255,51,85,0.04);border:1px solid rgba(255,51,85,0.25);color:var(--red);cursor:pointer;border-radius:2px;transition:all 0.2s;margin-bottom:5px;"
+          onclick="exportLogs()">↓ EXPORTER LOGS</button>
+        <button style="width:100%;padding:8px;font-family:var(--fm);font-size:9px;letter-spacing:2px;
+          background:rgba(170,102,255,0.04);border:1px solid rgba(170,102,255,0.25);color:var(--purple);cursor:pointer;border-radius:2px;transition:all 0.2s;"
+          onclick="showBlockedIPs()">⊗ IPs BLOQUÉES</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 5 — LOGS ═══════════ -->
+<div class="page" id="p5" style="grid-template-columns:1fr 260px;">
+
+  <div class="pnl">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd"></div>JOURNAL COMPLET</div>
+      <span class="pcnt" id="log-cnt">0</span>
+    </div>
+    <div class="filters">
+      <button class="fb on" onclick="setLogFilter('ALL',this)">TOUT</button>
+      <button class="fb r"  onclick="setLogFilter('CRITICAL',this)">CRITIQUE</button>
+      <button class="fb a"  onclick="setLogFilter('WARNING',this)">WARNING</button>
+      <button class="fb"    onclick="setLogFilter('RESPONSE',this)">ACTIONS</button>
+      <button class="fb b"  onclick="setLogFilter('NET',this)">RÉSEAU</button>
+      <button class="fb"    onclick="setLogFilter('FILE',this)">FICHIERS</button>
+    </div>
+    <div class="pbody" id="log-list"><div class="empty">AUCUN LOG</div></div>
+  </div>
+
+  <!-- WS log -->
+  <div class="pnl">
+    <div class="ptitle"><div class="ptl"><div class="pd a"></div>JOURNAL WEBSOCKET</div></div>
+    <div class="pbody" id="wslog" style="font-family:var(--fm);font-size:8px;color:var(--teal2);line-height:1.9;">
+      <div style="opacity:0.35;letter-spacing:2px;">EN ATTENTE WS...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ PAGE 6 — FICHIERS ═══════════ -->
+<div class="page" id="p6" style="grid-template-columns:1fr 280px;grid-template-rows:1fr;">
+
+  <!-- Liste fichiers -->
+  <div class="pnl">
+    <div class="ptitle">
+      <div class="ptl"><div class="pd a"></div>FICHIERS DÉTECTÉS — TEMPS RÉEL</div>
+      <span class="pcnt" id="file-cnt">0</span>
+    </div>
+    <div class="filters">
+      <button class="fb on" onclick="setFileFilter('ALL',this)">TOUT</button>
+      <button class="fb r"  onclick="setFileFilter('CRITICAL',this)">CRITIQUE</button>
+      <button class="fb a"  onclick="setFileFilter('WARNING',this)">SUSPECT</button>
+      <button class="fb b"  onclick="setFileFilter('TELECHARGEMENT',this)">TÉLÉCHARG.</button>
+      <button class="fb"    onclick="setFileFilter('BUREAU',this)">BUREAU</button>
+      <button class="fb"    onclick="setFileFilter('DOCUMENTS',this)">DOCUMENTS</button>
+      <button class="fb"    onclick="setFileFilter('TEMP',this)">TEMP</button>
+    </div>
+    <div class="pbody" id="file-list"><div class="empty">EN ATTENTE DE FICHIERS...</div></div>
+  </div>
+
+  <!-- Stats fichiers sidebar -->
+  <div class="pnl">
+    <div class="ptitle"><div class="ptl"><div class="pd"></div>STATISTIQUES</div></div>
+    <div class="pbody">
+      <!-- Compteurs par type -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;">
+        <div style="background:rgba(255,51,85,0.04);border:1px solid rgba(255,51,85,0.15);border-radius:2px;padding:8px;text-align:center;">
+          <div style="font-family:var(--fh);font-size:20px;color:var(--red)" id="fs-crit">0</div>
+          <div style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-top:2px;letter-spacing:1px">CRITIQUES</div>
+        </div>
+        <div style="background:rgba(255,170,0,0.04);border:1px solid rgba(255,170,0,0.15);border-radius:2px;padding:8px;text-align:center;">
+          <div style="font-family:var(--fh);font-size:20px;color:var(--amber)" id="fs-warn">0</div>
+          <div style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-top:2px;letter-spacing:1px">SUSPECTS</div>
+        </div>
+        <div style="background:rgba(0,204,255,0.04);border:1px solid rgba(0,204,255,0.12);border-radius:2px;padding:8px;text-align:center;">
+          <div style="font-family:var(--fh);font-size:20px;color:var(--cyan)" id="fs-dl">0</div>
+          <div style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-top:2px;letter-spacing:1px">TÉLÉCHRG.</div>
+        </div>
+        <div style="background:rgba(0,212,170,0.04);border:1px solid rgba(0,212,170,0.12);border-radius:2px;padding:8px;text-align:center;">
+          <div style="font-family:var(--fh);font-size:20px;color:var(--teal)" id="fs-total">0</div>
+          <div style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-top:2px;letter-spacing:1px">TOTAL</div>
+        </div>
+      </div>
+      <!-- Boutons action -->
+      <div style="padding:5px;">
+        <button style="width:100%;margin-top:5px;padding:7px;font-family:var(--fm);font-size:8px;letter-spacing:1px;
+          background:rgba(255,51,85,0.04);border:1px solid rgba(255,51,85,0.2);color:var(--red);
+          cursor:pointer;border-radius:2px;transition:all 0.2s;"
+          onclick="clearFileHistory()">✕ EFFACER HISTORIQUE</button>
+      </div>
+      <!-- Extensions les plus vues -->
+      <div style="padding:5px 8px;margin-top:5px;">
+        <div style="font-family:var(--fm);font-size:7px;opacity:0.35;letter-spacing:2px;margin-bottom:6px;">EXTENSIONS</div>
+        <div id="fs-exts"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ KILL MODAL ═══ -->
+<div id="kmod">
+  <div id="kbox">
+    <div class="ktitle">⊗ KILL PROCESS DISTANT</div>
+    <label class="klbl">AGENT</label>
+    <div id="kagent" style="font-family:var(--fm);font-size:9px;color:var(--teal);margin-bottom:10px;">—</div>
+    <label class="klbl">PID À TERMINER</label>
+    <input type="number" id="kpid" class="kinp" placeholder="ex: 4832" min="1">
+    <div class="kinfo">Envoyé via WebSocket si l'agent est connecté en live.</div>
+    <div class="kbtns">
+      <button class="kbtn no" onclick="closeKill()">ANNULER</button>
+      <button class="kbtn ok" onclick="confirmKill()">⊗ CONFIRMER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DETAIL MODAL ═══ -->
+<div id="dmod" onclick="if(event.target===this)closeDetail()">
+  <div id="dbox">
+    <button class="dclose" onclick="closeDetail()">✕ FERMER</button>
+    <h2 id="dtitle">DÉTAIL</h2>
+    <pre id="dbody"></pre>
+  </div>
+</div>
+
+<!-- ═══ STATUSBAR ═══ -->
+<div id="sb">
+  <div class="sbl">
+    <span class="sbok">● FORTRESS ACTIF</span>
+    <span>AGENTS: <span id="sb-ag">0</span></span>
+    <span>WS LIVE: <span id="sb-ws" style="color:var(--teal)">0</span></span>
+    <span>BLOQUÉS: <span id="sb-blk" style="color:var(--purple)">0</span></span>
+    <span>TOTAL: <span id="sb-tot">0</span></span>
+  </div>
+  <div class="sbr">
+    <span style="opacity:0.35">MAJ: <span id="sb-upd">—</span></span>
+    <span class="sbt" id="sb-clk">--:--:--</span>
+    <span style="opacity:0.25">12ak_H4ck Fortress v5.0</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+'use strict';
+// ══ AUTH
+(async()=>{try{const r=await fetch('/api/stats',{signal:AbortSignal.timeout(3000)});if(r.status===401)window.location.href='/';}catch(e){}})();
+async function logout(){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});}catch(e){}window.location.href='/';}
+
+// ══ STATE
+let allAlerts=[], agentsData={}, statsData={}, sysinfoData={}, procsData={}, connsData={};
+let blockedIPs=new Set(), blockedCount=0;
+let alertFilter='ALL', logFilter='ALL', pubFilter='ALL', prvFilter='ALL', procFilter='ALL';
+let procSort='cpu', geoCache={}, mapMarkers={}, mapLines=[], killAgent='';
+let fileFilter='ALL', fileAlerts=[];
+let killChainActive=false;
+let wsConn=null, wsRetryCount=0;
+const SUSPECT_PORTS=new Set([4444,1337,5555,6666,7777,8888,9001,9090,31337,4000,1234,12345,54321]);
+
+// ══ LEAFLET MAP
+const map=L.map('lmap',{center:[20,10],zoom:2,zoomControl:false,attributionControl:false,minZoom:1,maxZoom:6});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{opacity:0.5}).addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+const iAgent=L.divIcon({className:'',html:'<div class="m-agent"></div>',iconSize:[12,12],iconAnchor:[6,6]});
+const iThreat=L.divIcon({className:'',html:'<div class="m-threat"></div>',iconSize:[10,10],iconAnchor:[5,5]});
+const iWarn=L.divIcon({className:'',html:'<div class="m-warn"></div>',iconSize:[9,9],iconAnchor:[4,4]});
+let agentMapMarker=L.marker([48.8,2.3],{icon:iAgent}).bindPopup('<b style="color:#00d4aa">VOTRE SERVEUR</b>').addTo(map);
+const COUNTRY_COORDS={'United States':[38,-97],'Russia':[61,105],'China':[35,105],'France':[46,2],'Germany':[51,10],'United Kingdom':[54,-2],'Netherlands':[52,5],'Ukraine':[49,32],'Brazil':[-10,-53],'India':[21,78],'Japan':[36,138],'South Korea':[37,127],'Canada':[56,-96],'Australia':[-25,133],'Iran':[32,53],'Singapore':[1.3,103.8],'Togo':[8,1.2],'Nigeria':[9,8],'Ghana':[8,-1],'Senegal':[14,-14],'Morocco':[32,-5],'Algeria':[28,2],'Tunisia':[33,9],'South Africa':[-29,25],'Kenya':[1,38],'United Arab Emirates':[24,54]};
+
+function addMapMarker(ip,geo,isCrit){
+  if(mapMarkers[ip]) return;
+  const c=COUNTRY_COORDS[geo.country];
+  if(!c) return;
+  const lat=c[0]+(Math.random()-0.5)*2.5, lng=c[1]+(Math.random()-0.5)*2.5;
+  const m=L.marker([lat,lng],{icon:isCrit?iThreat:iWarn})
+    .bindPopup(`<b style="color:${isCrit?'#ff3355':'#ffaa00'}">${ip}</b><br>${geo.city||''} — ${geo.country}<br><span style="opacity:0.6">${geo.org||''}</span>`)
+    .addTo(map);
+  mapMarkers[ip]={m,lat,lng};
+  const ap=agentMapMarker.getLatLng();
+  const line=L.polyline([[ap.lat,ap.lng],[lat,lng]],{color:isCrit?'#ff3355':'#ffaa00',weight:1,opacity:0.4,dashArray:'3,7'}).addTo(map);
+  mapLines.push(line);
+  document.getElementById('map-cnt').textContent=Object.keys(mapMarkers).length+' IPs';
+}
+
+// ══ WEBSOCKET
+function connectWS(){
+  const port=window._WS_PORT||9998;
+  const sess=window._WS_SESSION||'';
+  const wsUrl=`ws://${location.hostname}:${port}/dashboard?session=${sess}`;
+  wsLog(`Connexion WS → ${wsUrl.slice(0,60)}...`);
+  try{ wsConn=new WebSocket(wsUrl); }
+  catch(e){ wsLog('Erreur création WS: '+e.message); setWS('err'); return; }
+  wsConn.onopen=()=>{wsRetryCount=0;setWS('on');wsLog('WebSocket connecté');upd();};
+  wsConn.onmessage=(e)=>{
+    try{
+      const d=JSON.parse(e.data);
+      if(d.type==='init'){
+        allAlerts=d.alerts||[];agentsData=d.agents||{};statsData=d.stats||{};
+        sysinfoData=d.sysinfo||{};procsData=d.procs||{};connsData=d.conns||{};
+        if(d.blocked){blockedIPs=new Set(d.blocked);blockedCount=blockedIPs.size;}
+        // Extraire les alertes fichiers depuis le snapshot initial
+        fileAlerts=(d.alerts||[]).filter(a=>a.category==='FILE');
+        render();wsLog(`Init: ${allAlerts.length} alertes, ${Object.keys(agentsData).length} agents`);
+      } else if(d.type==='sysinfo_update'){
+        sysinfoData[d.agent]=d.data; renderSysinfo(d.agent); renderAgents();
+      } else if(d.type==='procs_update'){
+        procsData[d.agent]=d.procs; renderProcs();
+      } else if(d.type==='conns_update'){
+        connsData[d.agent]=d.conns; renderNetwork();
+      } else if(d.type==='blocked_update'){
+        blockedIPs=new Set(d.blocked||[]);blockedCount=blockedIPs.size;
+        renderNetwork();renderHeader();
+      } else if(d.type==='agents_update'){
+        agentsData=d.agents||{};statsData=d.stats||{};renderHeader();renderAgents();
+      } else if(d.level){
+        allAlerts.unshift(d);
+        if(allAlerts.length>1500)allAlerts.pop();
+        statsData[d.level]=(statsData[d.level]||0)+1;
+        statsData.total=(statsData.total||0)+1;
+        if(agentsData[d.agent]){agentsData[d.agent].count=(agentsData[d.agent].count||0)+1;agentsData[d.agent].last_seen=d.time||'';}
+        if(d.level==='CRITICAL')showToast(d);
+        // Détecter Kill Chain → bannière rouge
+        if(d.category==='CORRELATION'&&d.extra&&d.extra.rule==='KILL_CHAIN'){
+          showKillChainBanner(d);
+        }
+        // Alimenter la liste fichiers
+        if(d.category==='FILE'){
+          fileAlerts.unshift(d);
+          if(fileAlerts.length>500)fileAlerts.pop();
+          renderFiles();
+        }
+        renderAlerts();renderLog();renderHeader();renderBlockedIPs();updateThreat();
+      }
+      document.getElementById('sb-upd').textContent=new Date().toTimeString().slice(0,8);
+    }catch(err){console.warn(err);}
+  };
+  wsConn.onerror=()=>{setWS('err');wsLog('Erreur WS');};
+  wsConn.onclose=()=>{setWS('off');wsLog('WS déconnecté — retry...');const d=Math.min(1000*2**wsRetryCount,30000);wsRetryCount++;setTimeout(connectWS,d);fallbackFetch();};
+}
+function setWS(s){const d=document.getElementById('wsd'),l=document.getElementById('wslbl');d.className='ws-d'+(s==='on'?' on':s==='err'?' err':'');l.textContent=s==='on'?'WS LIVE':s==='err'?'WS ERR':'WS OFF';l.style.color=s==='on'?'var(--teal)':s==='err'?'var(--red)':'var(--text2)';}
+function wsLog(m){const el=document.getElementById('wslog'),t=new Date().toTimeString().slice(0,8),ln=document.createElement('div');ln.style.cssText='opacity:0.65;padding:1px 0;';ln.innerHTML=`<span style="color:var(--amber)">${t}</span>  ${esc(m)}`;el.insertBefore(ln,el.firstChild);while(el.children.length>60)el.removeChild(el.lastChild);}
+async function fallbackFetch(){
+  try{
+    const[r1,r2,r3,r4,r5]=await Promise.all([
+      fetch('/api/alerts?limit=500'),fetch('/api/stats'),
+      fetch('/api/sysinfo'),fetch('/api/procs'),fetch('/api/conns')
+    ]);
+    if(r1.status===401){window.location.href='/';return;}
+    const d1=await r1.json(),d2=await r2.json(),d3=await r3.json(),d4=await r4.json(),d5=await r5.json();
+    allAlerts=d1.alerts||[];
+    agentsData=d2.agents||{};
+    statsData=d2.stats||{};
+    sysinfoData=d3.all||{};
+    procsData=d4.all||{};
+    connsData=d5.all||{};
+    render();
+    document.getElementById('sb-upd').textContent=new Date().toTimeString().slice(0,8);
+  }catch(e){
+    console.warn('[Fallback]',e);
+  }
+}
+
+// ══ CLOCK
+setInterval(()=>{const t=new Date().toTimeString().slice(0,8);document.getElementById('hclk').textContent=t;document.getElementById('sb-clk').textContent=t;},500);
+
+// ══ PAGE NAV
+function goPage(n,btn){
+  for(let i=1;i<=6;i++){const el=document.getElementById('p'+i);if(el)el.classList.toggle('on',i===n);}
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  if(n===1)setTimeout(()=>map.invalidateSize(),80);
+  if(n===6)renderFiles();
+}
+
+// ══ MAIN RENDER
+function render(){renderHeader();renderAgents();renderSysinfo();renderAlerts();renderNetwork();renderProcs();renderLog();renderFiles();renderBlockedIPs();updateThreat();refreshGeo();}
+function upd(){renderHeader();renderAgents();renderSysinfo();renderAlerts();renderNetwork();renderProcs();renderBlockedIPs();}
+
+function renderHeader(){
+  const s=statsData;
+  document.getElementById('h-crit').textContent=s.CRITICAL||0;
+  document.getElementById('h-warn').textContent=s.WARNING||0;
+  document.getElementById('h-evt').textContent=s.total||0;
+  document.getElementById('h-blk').textContent=blockedCount;
+  const na=Object.keys(agentsData).length;
+  document.getElementById('h-agt').textContent=na;
+  document.getElementById('sb-ag').textContent=na;
+  document.getElementById('sb-tot').textContent=s.total||0;
+  document.getElementById('sb-blk').textContent=blockedCount;
+  const wsLive=Object.values(agentsData).filter(a=>a.ws_connected).length;
+  document.getElementById('sb-ws').textContent=wsLive;
+  document.getElementById('s-crit').textContent=s.CRITICAL||0;
+  document.getElementById('s-warn').textContent=s.WARNING||0;
+  document.getElementById('s-info').textContent=s.INFO||0;
+  document.getElementById('s-blk').textContent=blockedCount;
+}
+
+// ══ SYSINFO GAUGES
+function renderSysinfo(specificAgent){
+  // Prend les données du premier agent (ou de l'agent sélectionné)
+  const keys=Object.keys(sysinfoData);
+  if(!keys.length) return;
+  const ag=specificAgent||keys[0];
+  const d=sysinfoData[ag]||{};
+  document.getElementById('sysinfo-agent').textContent=ag||'—';
+
+  // CPU gauge
+  const cpu=d.cpu||0;
+  const cpuColor=cpu>85?'#ff3355':cpu>70?'#ffaa00':'#00d4aa';
+  setGauge('g-cpu',cpu,cpuColor);
+  document.getElementById('g-cpu-v').textContent=Math.round(cpu);
+  document.getElementById('g-cpu-v').style.color=cpuColor;
+  document.getElementById('g-cpu-sub').textContent=`${d.cpu_count||'?'} cœurs | moy ${d.cpu_avg1m||0}%`;
+
+  // RAM gauge
+  const ram=d.ram_percent||0;
+  const ramColor=ram>90?'#ff3355':ram>80?'#ffaa00':'#00ccff';
+  setGauge('g-ram',ram,ramColor);
+  document.getElementById('g-ram-v').textContent=Math.round(ram);
+  document.getElementById('g-ram-v').style.color=ramColor;
+  const usedMB=d.ram_used_mb||0, totalMB=d.ram_total_mb||0;
+  document.getElementById('g-ram-sub').textContent=`${fmtMB(usedMB)} / ${fmtMB(totalMB)}`;
+
+  // Disks
+  const disks=d.disks||[];
+  const el=document.getElementById('disk-bars');
+  if(!disks.length){el.innerHTML='<div class="empty">PAS DE DISQUES</div>';return;}
+  el.innerHTML=disks.map(dk=>{
+    const pct=dk.percent||0;
+    const col=pct>95?'#ff3355':pct>80?'#ffaa00':'#00d4aa';
+    return `<div class="disk-bar-row">
+      <div class="disk-bar-hdr">
+        <span>${esc(dk.mount)} <span style="opacity:0.5;font-size:7px">${esc(dk.fstype||'')}</span></span>
+        <span style="color:${col}">${pct}% — ${dk.used_gb}/${dk.total_gb} GB</span>
+      </div>
+      <div class="disk-bar-track"><div class="disk-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+}
+function setGauge(id,pct,color){
+  const circ=2*Math.PI*28; // r=28
+  const offset=circ*(1-Math.min(pct,100)/100);
+  const el=document.getElementById(id);
+  if(el){el.style.strokeDashoffset=offset;el.setAttribute('stroke',color);}
+}
+function fmtMB(mb){return mb>=1024?`${(mb/1024).toFixed(1)} GB`:`${mb} MB`;}
+
+// ══ AGENTS SIDEBAR
+function renderAgents(){
+  const el=document.getElementById('ag-list');
+  const keys=Object.keys(agentsData);
+  document.getElementById('ag-cnt').textContent=keys.length;
+  if(!keys.length){el.innerHTML='<div class="empty">EN ATTENTE...</div>';return;}
+  const agStats={};
+  allAlerts.forEach(a=>{const ag=a.agent||'?';if(!agStats[ag])agStats[ag]={CRITICAL:0,WARNING:0,total:0};agStats[ag][a.level]=(agStats[ag][a.level]||0)+1;agStats[ag].total++;});
+  el.innerHTML=keys.map(k=>{
+    const ag=agentsData[k],st=agStats[k]||{CRITICAL:0,WARNING:0,total:0};
+    const sys=sysinfoData[k]||{};
+    const hasCrit=st.CRITICAL>0,hasWarn=st.WARNING>0,wsLive=ag.ws_connected===true;
+    const cls=hasCrit?'crit':hasWarn?'warn':wsLive?'live':'';
+    const cpu=sys.cpu||0,ram=sys.ram_percent||0;
+    const cpuCol=cpu>80?'var(--red)':cpu>60?'var(--amber)':'var(--teal)';
+    const ramCol=ram>90?'var(--red)':ram>75?'var(--amber)':'var(--cyan)';
+    const score=Math.max(0,100-st.CRITICAL*15-st.WARNING*5);
+    const sCol=score<40?'var(--red)':score<70?'var(--amber)':'var(--teal)';
+    return `<div class="agcard ${cls}">
+      <div class="ag-top">
+        <div class="ag-name">${esc(k)}</div>
+        <div class="ag-badges">
+          ${wsLive?'<span class="badge live">⚡ LIVE</span>':''}
+          <span class="badge ${hasCrit?'crit':hasWarn?'warn':ag.online===false?'crit':'ok'}"
+            style="${ag.online===false?'background:rgba(255,51,85,0.15);color:var(--red)':''}"
+          >${hasCrit?'ALERTE':hasWarn?'SUSPECT':ag.online===false?'🔴 OFFLINE':'🟢 EN LIGNE'}</span>
+        </div>
+      </div>
+      <div style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-bottom:5px">${esc(ag.os||'?')} — sécu: <span style="color:${sCol}">${score}/100</span></div>
+      ${sys.cpu!=null?`<div class="ag-cpu-ram">
+        <div class="mini-bar-row"><div class="mini-bar-lbl">CPU</div><div class="mini-bar"><div class="mini-bar-fill" style="width:${cpu}%;background:${cpuCol}"></div></div><div class="mini-bar-val" style="color:${cpuCol}">${Math.round(cpu)}%</div></div>
+        <div class="mini-bar-row"><div class="mini-bar-lbl">RAM</div><div class="mini-bar"><div class="mini-bar-fill" style="width:${ram}%;background:${ramCol}"></div></div><div class="mini-bar-val" style="color:${ramCol}">${Math.round(ram)}%</div></div>
+      </div>`:''}
+      <div class="ag-counters">
+        <div class="ag-cnt">ÉVT <span>${st.total}</span></div>
+        <div class="ag-cnt" style="color:var(--red);opacity:1">CRIT <span>${st.CRITICAL}</span></div>
+        <div class="ag-cnt" style="color:var(--amber);opacity:1">WARN <span>${st.WARNING}</span></div>
+      </div>
+      <div class="ag-actions">
+        <button class="abtn kill" onclick="openKill('${esc(k)}')">⊗ KILL</button>
+        <button class="abtn info" onclick="showDetailEl(this)" data-detail='${safeJson({agent:k,...ag,...(sys||{})})}'  >↗ INFO</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ NETWORK
+function renderNetwork(){
+  // Rassemble toutes les connexions de tous les agents
+  let allConns=[];
+  Object.entries(connsData).forEach(([ag,conns])=>{
+    (conns||[]).forEach(c=>allConns.push({...c,_agent:ag}));
+  });
+
+  const pub=allConns.filter(c=>c.ip_type==='PUBLIC');
+  const prv=allConns.filter(c=>c.ip_type==='PRIVATE'||c.ip_type==='LOCAL');
+
+  // Stats
+  document.getElementById('ns-total').textContent=allConns.length;
+  document.getElementById('ns-pub').textContent=pub.length;
+  document.getElementById('ns-prv').textContent=prv.length;
+  document.getElementById('ns-tcp').textContent=allConns.filter(c=>c.proto==='TCP').length;
+  document.getElementById('ns-udp').textContent=allConns.filter(c=>c.proto==='UDP').length;
+  const sus=allConns.filter(c=>SUSPECT_PORTS.has(c.rport)||SUSPECT_PORTS.has(c.lport));
+  document.getElementById('ns-sus').textContent=sus.length;
+
+  // Public table
+  let pubF=pub;
+  if(pubFilter==='CRIT') pubF=pub.filter(c=>SUSPECT_PORTS.has(c.rport)||SUSPECT_PORTS.has(c.lport));
+  else if(pubFilter==='WARN') pubF=pub.filter(c=>c.status==='CLOSE_WAIT'||c.status==='TIME_WAIT');
+  else if(pubFilter==='TCP') pubF=pub.filter(c=>c.proto==='TCP');
+  else if(pubFilter==='UDP') pubF=pub.filter(c=>c.proto==='UDP');
+  document.getElementById('pub-cnt').textContent=pubF.length;
+  const ptb=document.getElementById('pub-tbody');
+  if(!pubF.length){ptb.innerHTML='<tr><td colspan="7" class="empty">AUCUNE CONNEXION PUBLIQUE</td></tr>';}
+  else ptb.innerHTML=pubF.slice(0,150).map(c=>{
+    const sus=SUSPECT_PORTS.has(c.rport)||SUSPECT_PORTS.has(c.lport);
+    const geo=geoCache[c.rip];
+    const flag=geo?geo.flag:'🌐';
+    const isBlk=blockedIPs.has(c.rip);
+    return `<tr class="${sus?'sus':''}">
+      <td><span class="proto-t ${c.proto}">${c.proto}</span></td>
+      <td style="color:var(--text)">${esc(c.proc||'?')}</td>
+      <td><span class="iptag ${sus?'sus':'pub'}">${flag} ${esc(c.rip||'—')}</span>${geo?`<span style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-left:4px">${geo.country||''}</span>`:''}</td>
+      <td style="font-family:var(--fm);color:${sus?'var(--red)':'var(--amber)'}">${c.rport||'—'}</td>
+      <td style="font-family:var(--fm);font-size:7px;opacity:0.5">${esc(c.status||'')}</td>
+      <td style="font-family:var(--fm);color:var(--text2)">${c.pid||'—'}</td>
+      <td>${isBlk?`<button class="bblk" style="color:var(--purple);border-color:rgba(170,102,255,0.4)" onclick="unblockIP('${esc(c.rip)}')">✓ DÉBLOQUER</button>`:(c.rip?`<button class="bblk" onclick="blockIP('${esc(c.rip)}','conn ${c.rport}')">⊗ BLOQUER</button>`:'')}</td>
+    </tr>`;
+  }).join('');
+
+  // Private table
+  let prvF=prv;
+  if(prvFilter==='CRIT') prvF=prv.filter(c=>SUSPECT_PORTS.has(c.rport)||SUSPECT_PORTS.has(c.lport));
+  else if(prvFilter==='TCP') prvF=prv.filter(c=>c.proto==='TCP');
+  else if(prvFilter==='UDP') prvF=prv.filter(c=>c.proto==='UDP');
+  document.getElementById('prv-cnt').textContent=prvF.length;
+  const pvtb=document.getElementById('prv-tbody');
+  if(!prvF.length){pvtb.innerHTML='<tr><td colspan="7" class="empty">AUCUNE CONNEXION PRIVÉE</td></tr>';}
+  else pvtb.innerHTML=prvF.slice(0,100).map(c=>{
+    const sus=SUSPECT_PORTS.has(c.rport)||SUSPECT_PORTS.has(c.lport);
+    return `<tr class="${sus?'sus':''}">
+      <td><span class="proto-t ${c.proto}">${c.proto}</span></td>
+      <td style="color:var(--text)">${esc(c.proc||'?')}</td>
+      <td><span class="iptag ${sus?'sus':'prv'}">${esc(c.rip||'local')}</span></td>
+      <td style="font-family:var(--fm);color:${sus?'var(--red)':'var(--cyan)'}">${c.rport||'—'}</td>
+      <td style="font-family:var(--fm);font-size:7px;opacity:0.5">${esc(c.status||'')}</td>
+      <td style="font-family:var(--fm);color:var(--text2)">${c.pid||'—'}</td>
+      <td>${sus?'<span style="font-family:var(--fm);font-size:7px;color:var(--amber)">PORT SUSPECT</span>':'<span style="opacity:0.3;font-family:var(--fm);font-size:7px">INTERNE</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  // Map: geo lookup for public IPs
+  pubF.forEach(c=>{if(c.rip&&!geoCache[c.rip])lookupGeo(c.rip,false);});
+}
+
+// ══ PROCESSES
+let selectedProc=null;
+function renderProcs(){
+  let allProcs=[];
+  Object.entries(procsData).forEach(([ag,procs])=>{(procs||[]).forEach(p=>allProcs.push({...p,_agent:ag}));});
+  // Filter
+  if(procFilter==='SUS') allProcs=allProcs.filter(p=>['mimikatz','meterpreter','nc','ncat','nmap','netcat'].some(s=>p.name.toLowerCase().includes(s)));
+  else if(procFilter==='CPU') allProcs.sort((a,b)=>b.cpu-a.cpu);
+  else if(procFilter==='MEM') allProcs.sort((a,b)=>b.mem-a.mem);
+  // Sort
+  if(procFilter==='ALL'){
+    if(procSort==='cpu') allProcs.sort((a,b)=>b.cpu-a.cpu);
+    else if(procSort==='mem') allProcs.sort((a,b)=>b.mem-a.mem);
+    else if(procSort==='pid') allProcs.sort((a,b)=>a.pid-b.pid);
+    else if(procSort==='name') allProcs.sort((a,b)=>a.name.localeCompare(b.name));
+  }
+  document.getElementById('proc-cnt').textContent=allProcs.length;
+  const tb=document.getElementById('proc-tbody');
+  if(!allProcs.length){tb.innerHTML='<tr><td colspan="7" class="empty">AUCUN PROCESSUS</td></tr>';return;}
+  tb.innerHTML=allProcs.slice(0,200).map(p=>{
+    const cpuCol=p.cpu>80?'var(--red)':p.cpu>40?'var(--amber)':'var(--teal)';
+    const memCol=p.mem>50?'var(--red)':p.mem>20?'var(--amber)':'var(--cyan)';
+    const isSus=['mimikatz','meterpreter','nc','ncat','nmap','netcat'].some(s=>p.name.toLowerCase().includes(s));
+    return `<tr class="${isSus?'sus':''}" onclick="selectProc(this)" data-proc='${safeJson(p)}' style="cursor:pointer">
+      <td style="font-family:var(--fm);color:${isSus?'#ff8899':'var(--text)'}">${esc(p.name)}</td>
+      <td style="font-family:var(--fm);color:var(--text2)">${p.pid}</td>
+      <td>
+        <div class="cpu-bar">
+          <div class="cpu-track"><div class="cpu-fill" style="width:${Math.min(p.cpu,100)}%;background:${cpuCol}"></div></div>
+          <span style="font-family:var(--fm);font-size:8px;color:${cpuCol};width:32px">${p.cpu.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td style="font-family:var(--fm);color:${memCol}">${p.mem.toFixed(2)}%</td>
+      <td style="font-family:var(--fm);font-size:7px;opacity:0.5">${esc(p.status||'?')}</td>
+      <td style="font-family:var(--fm);font-size:7px;opacity:0.5">${esc((p.user||'?').split('\\').pop())}</td>
+      <td><button class="pkill" onclick="event.stopPropagation();openKillPid('${esc(p._agent)}',${p.pid})">⊗ KILL</button></td>
+    </tr>`;
+  }).join('');
+}
+function sortProcs(field){procSort=field;renderProcs();}
+function selectProc(el){
+  let p;
+  if(el && el.tagName){
+    // Appelé depuis onclick avec this (l'élément TR)
+    try{ p=JSON.parse(el.dataset.proc.replace(/&#39;/g,"'")); }catch(e){ return; }
+  } else {
+    p=el; // Compatibilité ancienne API
+  }
+  selectedProc=p;
+  const cpuCol=p.cpu>80?'#ff3355':p.cpu>40?'#ffaa00':'#00d4aa';
+  document.getElementById('proc-detail').innerHTML=`
+    <div style="padding:10px;">
+      <div style="font-family:var(--fh);font-size:11px;color:var(--text);margin-bottom:12px">${esc(p.name)}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:rgba(0,212,170,0.03);border:1px solid var(--border);border-radius:2px;padding:8px;text-align:center">
+          <div style="font-family:var(--fh);font-size:18px;color:${cpuCol}">${p.cpu.toFixed(1)}%</div>
+          <div style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-top:2px">CPU</div>
+        </div>
+        <div style="background:rgba(0,204,255,0.03);border:1px solid var(--border);border-radius:2px;padding:8px;text-align:center">
+          <div style="font-family:var(--fh);font-size:18px;color:var(--cyan)">${p.mem.toFixed(2)}%</div>
+          <div style="font-family:var(--fm);font-size:7px;opacity:0.4;margin-top:2px">RAM</div>
+        </div>
+      </div>
+      <div style="font-family:var(--fm);font-size:8px;line-height:2;color:var(--text2);">
+        <div><span style="opacity:0.4">PID   </span> <span style="color:var(--text)">${p.pid}</span></div>
+        <div><span style="opacity:0.4">ÉTAT  </span> <span style="color:var(--text)">${esc(p.status||'?')}</span></div>
+        <div><span style="opacity:0.4">USER  </span> <span style="color:var(--text)">${esc(p.user||'?')}</span></div>
+        <div><span style="opacity:0.4">AGENT </span> <span style="color:var(--teal)">${esc(p._agent||'?')}</span></div>
+      </div>
+      <button class="pkill" style="width:100%;margin-top:14px;padding:8px;font-size:9px;"
+        onclick="openKillPid('${esc(p._agent)}',${p.pid})">
+        ⊗ KILL PID ${p.pid} — ${esc(p.name)}
+      </button>
+    </div>`;
+}
+
+// ══ ALERTS
+function dedup(arr){
+  const m=new Map();
+  for(const a of arr){
+    const k=`${a.level}|${a.category}|${a.title}|${a.agent}`;
+    if(!m.has(k))m.set(k,{...a,_count:1,_last:a.time});
+    else{const e=m.get(k);e._count++;e._last=a.time;}
+  }
+  return[...m.values()].sort((a,b)=>{const o={CRITICAL:0,WARNING:1,INFO:2};const d=(o[a.level]??3)-(o[b.level]??3);return d||((b._last||'').localeCompare(a._last||''));});
+}
+function renderAlerts(){
+  let data=allAlerts;
+  if(alertFilter==='CRITICAL') data=data.filter(a=>a.level==='CRITICAL');
+  else if(alertFilter==='WARNING') data=data.filter(a=>a.level==='WARNING');
+  else if(alertFilter==='PROCESS') data=data.filter(a=>a.category==='PROCESS'||a.category==='PROC_LIST');
+  else if(alertFilter==='NET') data=data.filter(a=>a.category==='NET_TCP'||a.category==='NET_UDP'||a.category==='NET_LIST');
+  else if(alertFilter==='FILE') data=data.filter(a=>a.category==='FILE');
+  else if(alertFilter==='CORRELATION') data=data.filter(a=>a.category==='CORRELATION');
+  const dd=dedup(data).slice(0,100);
+  document.getElementById('alert-cnt').textContent=dd.length;
+  const el=document.getElementById('alert-list');
+  if(!dd.length){el.innerHTML='<div class="empty">AUCUNE ALERTE</div>';return;}
+  const hasCrit=dd.some(a=>a.level==='CRITICAL');
+  const dot=document.getElementById('alert-dot');
+  if(dot)dot.style.animation=hasCrit?'blnk 1s step-end infinite':'';
+  el.innerHTML=dd.map(a=>{
+    const cnt=a._count||1,ex=a.extra||{};
+    const isCorr=a.category==='CORRELATION';
+    const corrCls=isCorr?' corr':'';
+    const badgeCls=isCorr?'CORR':a.level;
+    const badgeTxt=isCorr?'SIEM':(a.level||'?').slice(0,4);
+    const catTxt=a.category||'?';
+    return `<div class="acard ${a.level}${corrCls}" onclick="showDetailEl(this)" data-detail='${safeJson(a)}'>
+      <div class="ah">
+        <span class="abadge ${badgeCls}">${badgeTxt}</span>
+        <span class="acat ${catTxt}">${catTxt}</span>
+        ${cnt>1?`<span class="acnt">×${cnt}</span>`:''}
+        <span class="atime">${(a._last||a.time||'').slice(11,19)}</span>
+      </div>
+      <div class="atitle">${esc(a.title||'')}</div>
+      <div class="adetail">${esc((a.detail||'').slice(0,110))}</div>
+      <div class="aagent">▶ ${esc(a.agent||'?')}${ex.rip&&!blockedIPs.has(ex.rip)?` <button class="bblk" style="font-size:7px;padding:1px 5px;" onclick="event.stopPropagation();blockIP('${ex.rip}','alerte')">⊘ ${ex.rip}</button>`:''}</div>
+    </div>`;
+  }).join('');
+  // Cat bars
+  const cats={};dd.forEach(a=>{cats[a.category]=(cats[a.category]||0)+1;});
+  const maxC=Math.max(...Object.values(cats),1);
+  document.getElementById('cat-bars').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([c,n])=>
+    `<div style="margin-bottom:5px;font-family:var(--fm);font-size:8px;">
+      <div style="display:flex;justify-content:space-between;opacity:0.5;margin-bottom:2px"><span>${c}</span><span>${n}</span></div>
+      <div style="height:3px;background:var(--dim);border-radius:2px;overflow:hidden"><div style="width:${n/maxC*100}%;height:100%;background:var(--teal);border-radius:2px"></div></div>
+    </div>`).join('');
+}
+function renderLog(){
+  let data=allAlerts;
+  if(logFilter==='CRITICAL') data=data.filter(a=>a.level==='CRITICAL');
+  else if(logFilter==='WARNING') data=data.filter(a=>a.level==='WARNING');
+  else if(logFilter==='RESPONSE') data=data.filter(a=>a.category==='RESPONSE');
+  else if(logFilter==='NET') data=data.filter(a=>a.category==='NET_TCP'||a.category==='NET_UDP'||a.category==='NET_LIST');
+  else if(logFilter==='FILE') data=data.filter(a=>a.category==='FILE');
+  const dd=dedup(data).slice(0,200);
+  document.getElementById('log-cnt').textContent=dd.length;
+  const el=document.getElementById('log-list');
+  if(!dd.length){el.innerHTML='<div class="empty">AUCUN LOG</div>';return;}
+  el.innerHTML=dd.map(a=>{
+    const cnt=a._count||1;
+    return `<div class="acard ${a.level}" onclick="showDetailEl(this)" data-detail='${safeJson(a)}'>
+      <div class="ah"><span class="abadge ${a.level}">${(a.level||'?').slice(0,4)}</span><span class="acat ${a.category||''}">${a.category||'?'}</span>${cnt>1?`<span class="acnt">×${cnt}</span>`:''}<span class="atime">${(a._last||a.time||'').slice(11,19)}</span></div>
+      <div class="atitle">${esc(a.title||'')}</div>
+      <div class="adetail">${esc((a.detail||'').slice(0,90))}</div>
+      <div class="aagent">▶ ${esc(a.agent||'?')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══ THREAT
+function updateThreat(){
+  const c=statsData.CRITICAL||0,w=statsData.WARNING||0;
+  let pct=Math.min(100,c*12+w*4),lbl='FAIBLE',col='var(--teal)';
+  if(pct>70){lbl='CRITIQUE';col='var(--red)';}else if(pct>40){lbl='ÉLEVÉE';col='var(--amber)';}else if(pct>15){lbl='MODÉRÉE';col='var(--amber)';}
+  document.getElementById('tfill').style.width=pct+'%';
+  document.getElementById('tval').textContent=lbl;
+  document.getElementById('tval').style.color=col;
+}
+
+// ══ GEO
+const FLAGS={'US':'🇺🇸','RU':'🇷🇺','CN':'🇨🇳','FR':'🇫🇷','DE':'🇩🇪','GB':'🇬🇧','NL':'🇳🇱','UA':'🇺🇦','BR':'🇧🇷','IN':'🇮🇳','JP':'🇯🇵','KR':'🇰🇷','CA':'🇨🇦','AU':'🇦🇺','IT':'🇮🇹','ES':'🇪🇸','SG':'🇸🇬','HK':'🇭🇰','TR':'🇹🇷','IR':'🇮🇷','TG':'🇹🇬','NG':'🇳🇬','GH':'🇬🇭','SN':'🇸🇳','MA':'🇲🇦','DZ':'🇩🇿','TN':'🇹🇳','ZA':'🇿🇦','KE':'🇰🇪','AE':'🇦🇪','CI':'🇨🇮'};
+async function lookupGeo(ip,isCrit){
+  if(geoCache[ip]) return;
+  geoCache[ip]={flag:'🌐',city:'',country:'?',org:''};
+  try{
+    const r=await fetch(`https://ip-api.com/json/${ip}?fields=status,country,countryCode,city,org`,{signal:AbortSignal.timeout(4000)});
+    const d=await r.json();
+    if(d.status==='success'){
+      geoCache[ip]={flag:FLAGS[d.countryCode]||'🌐',city:d.city||'',country:d.country||'?',countryCode:d.countryCode||'',org:d.org||''};
+      addMapMarker(ip,geoCache[ip],isCrit||false);
+      renderNetwork();
+    }
+  }catch(e){}
+}
+function refreshGeo(){
+  Object.values(connsData).flat().filter(c=>c.ip_type==='PUBLIC'&&c.rip&&!geoCache[c.rip]).slice(0,20).forEach(c=>{
+    lookupGeo(c.rip,SUSPECT_PORTS.has(c.rport));
+  });
+  allAlerts.filter(a=>(a.category==='NET_TCP'||a.category==='NET_UDP')&&a.extra?.rip&&!a.extra?.ip_known&&!geoCache[a.extra.rip]).slice(0,20).forEach(a=>lookupGeo(a.extra.rip,a.level==='CRITICAL'));
+}
+
+// ══ KILL
+function openKill(agent){killAgent=agent;document.getElementById('kagent').textContent=agent;document.getElementById('kpid').value='';document.getElementById('kmod').classList.add('on');setTimeout(()=>document.getElementById('kpid').focus(),80);}
+function openKillPid(agent,pid){killAgent=agent;document.getElementById('kagent').textContent=agent;document.getElementById('kpid').value=pid;document.getElementById('kmod').classList.add('on');}
+function closeKill(){document.getElementById('kmod').classList.remove('on');}
+async function confirmKill(){
+  const pid=parseInt(document.getElementById('kpid').value);
+  if(!pid||pid<1){document.getElementById('kpid').focus();return;}
+  closeKill();
+  if(wsConn&&wsConn.readyState===WebSocket.OPEN)wsConn.send(JSON.stringify({action:'KILL',agent:killAgent,pid}));
+  try{await fetch('/api/kill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pid,agent:killAgent})});}catch(e){}
+  showToast({level:'WARNING',title:`⊗ KILL PID ${pid}`,detail:`Agent: ${killAgent}`,agent:'FORTRESS'});
+}
+
+// ══ BLOCK / UNBLOCK IP
+function blockIP(ip,reason){
+  if(blockedIPs.has(ip)){showToast({level:'INFO',title:`IP ${ip} déjà bloquée`,detail:'Utiliser DÉBLOQUER',agent:'FORTRESS'});return;}
+  if(!confirm(`⊗ BLOQUER ${ip} ?\nRaison: ${reason}\n\nPropagé à tous les agents.`))return;
+  blockedIPs.add(ip);blockedCount++;
+  if(wsConn&&wsConn.readyState===WebSocket.OPEN)wsConn.send(JSON.stringify({action:'BLOCK',ip,reason}));
+  fetch('/api/block',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip,reason})}).catch(()=>{});
+  showToast({level:'CRITICAL',title:`⊗ IP BLOQUÉE : ${ip}`,detail:reason,agent:'FORTRESS'});
+  renderNetwork();renderAlerts();renderHeader();
+}
+function unblockIP(ip){
+  if(!blockedIPs.has(ip))return;
+  if(!confirm(`Débloquer l'IP ${ip} ?`))return;
+  blockedIPs.delete(ip);if(blockedCount>0)blockedCount--;
+  if(wsConn&&wsConn.readyState===WebSocket.OPEN)wsConn.send(JSON.stringify({action:'UNBLOCK',ip}));
+  fetch('/api/unblock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ip})}).catch(()=>{});
+  showToast({level:'INFO',title:`✓ IP DÉBLOQUÉE : ${ip}`,detail:'Trafic restauré',agent:'FORTRESS'});
+  renderNetwork();renderAlerts();renderHeader();
+}
+
+// ══ EXPORT LOGS
+function exportLogs(){
+  const data=JSON.stringify(allAlerts,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`shield_logs_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+  a.click();URL.revokeObjectURL(url);
+  showToast({level:'INFO',title:'Logs exportés',detail:`${allAlerts.length} alertes`,agent:'FORTRESS'});
+}
+
+// ══ MODAL IPs BLOQUÉES
+function showBlockedIPs(){
+  const list=[...blockedIPs];
+  if(!list.length){showToast({level:'INFO',title:'Aucune IP bloquée',detail:'',agent:'FORTRESS'});return;}
+  const html=list.map(ip=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+      <span style="font-family:var(--fm);color:var(--red)">${esc(ip)}</span>
+      <button class="bblk" style="color:var(--purple);border-color:rgba(170,102,255,0.4)" onclick="unblockIP('${esc(ip)}');closeDetail()">✓ DÉBLOQUER</button>
+    </div>`).join('');
+  document.getElementById('dtitle').textContent='IPs BLOQUEES PAR IPS';
+  document.getElementById('dbody').innerHTML='<div style="padding:4px">'+html+'</div>';
+  document.getElementById('dbody').style.whiteSpace='normal';
+  document.getElementById('dmod').classList.add('on');
+}
+
+// ══ DETAIL MODAL
+function showDetail(a){
+  if(typeof a === 'string'){
+    try{ a=JSON.parse(a.replace(/&#39;/g,"'")); }catch(e){ return; }
+  }
+  document.getElementById('dtitle').textContent=(a.title||'DÉTAIL').toUpperCase().slice(0,60);
+  const dbody=document.getElementById('dbody');
+  dbody.textContent=JSON.stringify(a,null,2);
+  dbody.style.whiteSpace='pre-wrap';
+  document.getElementById('dmod').classList.add('on');
+}
+function showDetailEl(el){
+  try{ showDetail(JSON.parse(el.dataset.detail.replace(/&#39;/g,"'"))); }catch(e){ console.warn(e); }
+}
+function closeDetail(){document.getElementById('dmod').classList.remove('on');}
+
+// ══ TOAST
+function showToast(a){const st=document.getElementById('toasts'),d=document.createElement('div');d.className=`toast ${a.level||'INFO'}`;d.innerHTML=`<div class="toast-t">${esc(a.title||'')}</div><div class="toast-b">${esc((a.detail||'').slice(0,70))}</div><div class="tprog"></div>`;st.prepend(d);setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity 0.4s';setTimeout(()=>d.remove(),400);},4000);while(st.children.length>5)st.lastChild.remove();}
+
+// ══ FILTERS
+function setAlertFilter(v,btn){alertFilter=v;btn.closest('.pnl,#p4').querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderAlerts();}
+function setLogFilter(v,btn){logFilter=v;btn.closest('.pnl').querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderLog();}
+function setPubFilter(v,btn){pubFilter=v;document.getElementById('pub-filters').querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderNetwork();}
+function setPrvFilter(v,btn){prvFilter=v;btn.closest('.pnl').querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderNetwork();}
+function setProcFilter(v,btn){procFilter=v;btn.closest('.pnl').querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderProcs();}
+
+// ══ UTILS
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function safeJson(obj){try{return JSON.stringify(obj).replace(/'/g,"&#39;").replace(/"/g,'&quot;');}catch(e){return '{}';}  }
+
+// ══ KEYBOARD
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeKill();closeDetail();}});
+
+// ══ NOTIFICATIONS
+if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();
+
+// ══ KILL CHAIN BANNIÈRE
+function showKillChainBanner(alert){
+  killChainActive=true;
+  const banner=document.getElementById('killchain-banner');
+  const detail=document.getElementById('kc-detail');
+  if(detail) detail.textContent=alert.detail||'Séquence complète détectée — intervention immédiate';
+  banner.classList.add('on');
+  // Décaler toutes les pages pour laisser de la place à la bannière
+  document.querySelectorAll('.page').forEach(p=>{p.style.top='90px';});
+  // Notification navigateur
+  if('Notification'in window&&Notification.permission==='granted'){
+    new Notification('⚔ KILL CHAIN DÉTECTÉE',{
+      body:alert.detail||'Attaque complète en cours',
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="28" font-size="28">⚠</text></svg>'
+    });
+  }
+}
+function closeKillChain(){
+  killChainActive=false;
+  document.getElementById('killchain-banner').classList.remove('on');
+  document.querySelectorAll('.page').forEach(p=>{p.style.top='';});
+}
+
+// ══ RENDER FICHIERS (Page 6)
+function setFileFilter(v,btn){
+  fileFilter=v;
+  document.querySelectorAll('#p6 .filters .fb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderFiles();
+}
+function renderFiles(){
+  let data=fileAlerts;
+  // Filtrage
+  if(fileFilter==='CRITICAL')      data=data.filter(a=>a.level==='CRITICAL');
+  else if(fileFilter==='WARNING')   data=data.filter(a=>a.level==='WARNING');
+  else if(fileFilter!=='ALL'){
+    data=data.filter(a=>{
+      const lbl=(a.extra&&a.extra.label)||'';
+      return lbl===fileFilter;
+    });
+  }
+
+  // Compteurs stats
+  const total=fileAlerts.length;
+  const crits=fileAlerts.filter(a=>a.level==='CRITICAL').length;
+  const warns=fileAlerts.filter(a=>a.level==='WARNING').length;
+  const dls  =fileAlerts.filter(a=>a.extra&&a.extra.label==='TELECHARGEMENT').length;
+  const cntEl=document.getElementById('file-cnt');
+  const fcrit=document.getElementById('fs-crit');
+  const fwarn=document.getElementById('fs-warn');
+  const fdl  =document.getElementById('fs-dl');
+  const ftot =document.getElementById('fs-total');
+  if(cntEl)cntEl.textContent=data.length;
+  if(fcrit)fcrit.textContent=crits;
+  if(fwarn)fwarn.textContent=warns;
+  if(fdl)  fdl.textContent=dls;
+  if(ftot) ftot.textContent=total;
+
+  // Extensions les plus vues
+  const exts={};
+  fileAlerts.forEach(a=>{if(a.extra&&a.extra.ext)exts[a.extra.ext]=(exts[a.extra.ext]||0)+1;});
+  const extEl=document.getElementById('fs-exts');
+  if(extEl){
+    const sorted=Object.entries(exts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxE=Math.max(...sorted.map(e=>e[1]),1);
+    extEl.innerHTML=sorted.map(([ext,n])=>`
+      <div style="margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;font-family:var(--fm);font-size:7px;opacity:0.5;margin-bottom:2px;">
+          <span>${esc(ext||'?')}</span><span>${n}</span>
+        </div>
+        <div style="height:3px;background:var(--dim);border-radius:2px;overflow:hidden;">
+          <div style="width:${n/maxE*100}%;height:100%;background:var(--amber);border-radius:2px;"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Rendu liste
+  const el=document.getElementById('file-list');
+  if(!el) return;
+  if(!data.length){
+    el.innerHTML='<div class="empty">AUCUN FICHIER DÉTECTÉ</div>';
+    return;
+  }
+  el.innerHTML=data.slice(0,200).map(a=>{
+    const ex=a.extra||{};
+    const lbl=ex.label||'USER';
+    const reasons=(ex.reasons||[]).join(' · ')||'Nouveau fichier';
+    const size=ex.size?`${(ex.size/1024).toFixed(1)} KB`:'?';
+    const msf=ex.msf_sig?`<span style="font-family:var(--fm);font-size:7px;color:var(--red);
+      background:rgba(255,51,85,0.12);padding:1px 5px;border-radius:1px;border:1px solid rgba(255,51,85,0.3);">
+      MSF: ${esc(ex.msf_sig)}</span>`:'';
+    return `<div class="file-card ${a.level||'INFO'}" onclick="showDetailEl(this)" data-detail='${safeJson(a)}'>
+      <div class="fc-header">
+        <span class="fc-badge ${a.level||'INFO'}">${(a.level||'INFO').slice(0,4)}</span>
+        <span class="fc-label ${lbl}">${esc(lbl)}</span>
+        ${msf}
+        <span class="fc-time">${(a.time||'').slice(11,19)}</span>
+      </div>
+      <div class="fc-name">${esc(ex.name||a.title||'?')}</div>
+      <div class="fc-path">${esc((ex.path||'').slice(0,120))}</div>
+      <div class="fc-meta">
+        <span class="fc-m">Taille: ${size}</span>
+        ${ex.ext?`<span class="fc-m">Ext: ${esc(ex.ext)}</span>`:''}
+        <span class="fc-m" style="color:var(--amber);opacity:0.7">${esc(reasons.slice(0,60))}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function clearFileHistory(){
+  if(!confirm('Effacer tout l historique des fichiers ?')) return;
+  fileAlerts=[];
+  renderFiles();
+}
+
+// ══ IPs BLOQUÉES PANEL PERMANENT
+function renderBlockedIPs(){
+  const listEl=document.getElementById('blk-ip-list');
+  const cntEl =document.getElementById('blk-count');
+  if(!listEl) return;
+  const ips=[...blockedIPs];
+  if(cntEl) cntEl.textContent=ips.length;
+  if(!ips.length){
+    listEl.innerHTML='<div style="text-align:center;padding:12px;font-family:var(--fm);font-size:9px;opacity:0.25;letter-spacing:2px;">AUCUNE IP BLOQUÉE</div>';
+    return;
+  }
+  listEl.innerHTML=ips.map(ip=>`
+    <div class="blk-ip-row">
+      <span class="blk-ip-addr">⊗ ${esc(ip)}</span>
+      <button class="blk-ip-unblk" onclick="unblockIP('${esc(ip)}')">✓ DÉBLOQUER</button>
+    </div>`).join('');
+}
+
+// ══ CORRELATION — style spécial dans renderAlerts
+// Patch renderAlerts pour badge CORR violet
+// ══ START — CORRECTION BUG WS : on attend que le DOM + les variables injectées soient prêts
+function startApp() {
+  setWS('off');
+  // Lancer d'abord le fallback HTTP immédiatement pour afficher les données
+  fallbackFetch();
+  // Rafraîchissement HTTP toutes les 5s (fiable même sans WS)
+  setInterval(fallbackFetch, 5000);
+
+  // Tenter la connexion WebSocket en parallèle
+  // _WS_PORT est injecté par le serveur — s'il est défini on tente le WS
+  if (typeof window._WS_PORT !== 'undefined') {
+    connectWS();
+  } else {
+    wsLog('Mode HTTP polling (pas de WS_PORT défini)');
+  }
+}
+
+// Démarrer après que TOUS les scripts (y compris injectés) soient exécutés
+window.addEventListener('load', startApp);
+</script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12ak_H4ck Fortress — Accès Sécurisé</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+  --bg:      #050c0f;
+  --bg2:     #071217;
+  --teal:    #00d4aa;
+  --teal2:   #00a882;
+  --teal3:   #005544;
+  --teal4:   #002a22;
+  --amber:   #ffaa00;
+  --red:     #ff3355;
+  --dim:     #1a2e35;
+  --text:    #c8e8e0;
+  --text2:   #7ab8a8;
+  --border:  rgba(0,212,170,0.15);
+  --border2: rgba(0,212,170,0.35);
+  --font-h:  'Orbitron', sans-serif;
+  --font-b:  'Rajdhani', sans-serif;
+  --font-m:  'Share Tech Mono', monospace;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-b);overflow:hidden;}
+
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.hex-grid{
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,212,170,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,170,0.03) 1px,transparent 1px);
+  background-size:40px 40px;animation:gridShift 20s linear infinite;
+}
+@keyframes gridShift{0%{background-position:0 0;}100%{background-position:40px 40px;}}
+.scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);}
+.corner{position:fixed;width:120px;height:120px;z-index:2;pointer-events:none;}
+.corner::before,.corner::after{content:'';position:absolute;background:var(--teal);opacity:0.4;}
+.corner.tl{top:16px;left:16px;} .corner.tr{top:16px;right:16px;transform:scaleX(-1);}
+.corner.bl{bottom:16px;left:16px;transform:scaleY(-1);} .corner.br{bottom:16px;right:16px;transform:scale(-1);}
+.corner::before{top:0;left:0;width:2px;height:40px;}
+.corner::after{top:0;left:0;width:40px;height:2px;}
+
+#app{position:relative;z-index:10;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+.logo-wrap{text-align:center;margin-bottom:40px;animation:fadeDown 0.8s ease both;}
+.logo-icon{width:72px;height:72px;margin:0 auto 16px;position:relative;}
+.logo-icon svg{width:100%;height:100%;filter:drop-shadow(0 0 16px rgba(0,212,170,0.6));animation:iconPulse 3s ease-in-out infinite;}
+@keyframes iconPulse{0%,100%{filter:drop-shadow(0 0 16px rgba(0,212,170,0.6));}50%{filter:drop-shadow(0 0 32px rgba(0,212,170,0.9));}}
+.logo-name{font-family:var(--font-h);font-size:32px;font-weight:900;letter-spacing:6px;color:var(--teal);
+  text-shadow:0 0 30px rgba(0,212,170,0.5);line-height:1;animation:glitch 8s infinite;}
+.logo-name .accent{color:var(--amber);}
+@keyframes glitch{0%,94%,100%{text-shadow:0 0 30px rgba(0,212,170,0.5);transform:none;}
+  95%{text-shadow:-2px 0 var(--amber),2px 0 var(--red);transform:skewX(-1deg);}
+  96%{text-shadow:2px 0 var(--amber),-2px 0 var(--red);transform:skewX(1deg);}
+  97%{text-shadow:0 0 30px rgba(0,212,170,0.5);transform:none;}}
+.logo-sub{font-family:var(--font-m);font-size:10px;letter-spacing:5px;color:var(--text2);margin-top:8px;opacity:0.7;}
+.tagline{font-family:var(--font-m);font-size:11px;color:var(--teal2);letter-spacing:3px;margin-top:6px;height:16px;}
+.tagline-cursor{display:inline-block;width:8px;height:12px;background:var(--teal);
+  animation:blink 0.8s step-end infinite;vertical-align:middle;margin-left:2px;}
+@keyframes blink{50%{opacity:0;}}
+
+.card{
+  width:420px;background:rgba(7,18,23,0.92);border:1px solid var(--border2);border-radius:4px;
+  padding:36px 40px;position:relative;
+  box-shadow:0 0 0 1px rgba(0,212,170,0.05),0 20px 60px rgba(0,0,0,0.6),inset 0 1px 0 rgba(0,212,170,0.1);
+  animation:fadeUp 0.8s 0.2s ease both;
+}
+.card::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:0.8;}
+.card::after{content:'ACCESS TERMINAL';position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-m);font-size:9px;letter-spacing:4px;color:var(--teal2);
+  background:var(--bg2);padding:0 12px;opacity:0.8;}
+
+.threat-bar{display:flex;align-items:center;gap:10px;margin-bottom:28px;
+  padding:8px 12px;background:rgba(0,212,170,0.04);border:1px solid var(--border);border-radius:2px;}
+.threat-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);
+  animation:threatPulse 2s ease-in-out infinite;flex-shrink:0;}
+@keyframes threatPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.7);}}
+.threat-text{font-family:var(--font-m);font-size:9px;color:var(--text2);letter-spacing:2px;flex:1;}
+.threat-status{font-family:var(--font-m);font-size:9px;color:var(--teal);letter-spacing:1px;}
+
+.field{margin-bottom:20px;}
+.field-label{font-family:var(--font-m);font-size:9px;color:var(--teal2);letter-spacing:3px;margin-bottom:8px;display:block;opacity:0.8;}
+.field-wrap{position:relative;}
+.field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--teal3);font-size:14px;pointer-events:none;transition:color 0.2s;}
+.field-wrap:focus-within .field-icon{color:var(--teal);}
+input[type="text"],input[type="password"]{
+  width:100%;background:rgba(0,212,170,0.04);border:1px solid var(--dim);border-radius:2px;
+  padding:12px 14px 12px 40px;font-family:var(--font-m);font-size:13px;color:var(--text);
+  letter-spacing:1px;outline:none;transition:all 0.2s;}
+input:focus{border-color:var(--teal2);background:rgba(0,212,170,0.07);box-shadow:0 0 0 2px rgba(0,212,170,0.1);}
+input::placeholder{color:rgba(122,184,168,0.3);letter-spacing:1px;}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--teal3);cursor:pointer;font-size:14px;padding:4px;transition:color 0.2s;}
+.eye-btn:hover{color:var(--teal);}
+
+.options-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;margin-top:-4px;}
+.remember{display:flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--font-m);font-size:10px;color:var(--text2);letter-spacing:1px;}
+.remember input[type="checkbox"]{display:none;}
+.check-box{width:14px;height:14px;border:1px solid var(--teal3);border-radius:1px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.remember input:checked + .check-box{background:var(--teal3);border-color:var(--teal);}
+.remember input:checked + .check-box::after{content:'✓';font-size:9px;color:var(--teal);}
+
+.btn-login{
+  width:100%;padding:14px;background:transparent;border:1px solid var(--teal2);border-radius:2px;
+  font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:4px;color:var(--teal);
+  cursor:pointer;position:relative;overflow:hidden;transition:all 0.3s;}
+.btn-login::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(0,212,170,0.08),transparent);
+  transform:translateX(-100%);transition:transform 0.5s;}
+.btn-login:hover{border-color:var(--teal);box-shadow:0 0 20px rgba(0,212,170,0.2);}
+.btn-login:hover::before{transform:translateX(100%);}
+.btn-login.loading{pointer-events:none;}
+.btn-login.loading span{opacity:0;}
+.btn-login .loader{position:absolute;inset:0;display:none;align-items:center;justify-content:center;gap:6px;}
+.btn-login.loading .loader{display:flex;}
+.loader-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:loaderBounce 0.8s ease-in-out infinite;}
+.loader-dot:nth-child(2){animation-delay:0.15s;} .loader-dot:nth-child(3){animation-delay:0.3s;}
+@keyframes loaderBounce{0%,100%{transform:scale(1);opacity:0.4;}50%{transform:scale(1.3);opacity:1;}}
+
+.error-msg{display:none;margin-top:14px;padding:10px 14px;background:rgba(255,51,85,0.08);
+  border:1px solid rgba(255,51,85,0.3);border-radius:2px;font-family:var(--font-m);font-size:10px;
+  color:#ff6677;letter-spacing:1px;animation:shake 0.3s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+
+.sys-info{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sys-item{display:flex;align-items:center;gap:6px;font-family:var(--font-m);font-size:9px;color:var(--text2);opacity:0.5;letter-spacing:1px;}
+.sys-dot{width:5px;height:5px;border-radius:50%;background:var(--teal);opacity:0.6;flex-shrink:0;}
+
+.status-bar{position:fixed;bottom:0;left:0;right:0;z-index:20;height:28px;background:rgba(7,18,23,0.9);
+  border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;font-family:var(--font-m);font-size:9px;color:var(--text2);letter-spacing:1px;}
+.status-left{display:flex;gap:20px;} .status-right{display:flex;gap:16px;align-items:center;}
+.status-ok{color:var(--teal);opacity:0.8;} .status-time{color:var(--amber);opacity:0.7;}
+
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="hex-grid"></div>
+<div class="scanlines"></div>
+<div class="corner tl"></div><div class="corner tr"></div>
+<div class="corner bl"></div><div class="corner br"></div>
+
+<div id="app">
+  <div class="logo-wrap">
+    <div class="logo-icon">
+      <svg viewBox="0 0 72 72" fill="none">
+        <polygon points="36,4 68,20 68,52 36,68 4,52 4,20" stroke="#00d4aa" stroke-width="1.5" fill="rgba(0,212,170,0.04)"/>
+        <polygon points="36,12 60,24 60,48 36,60 12,48 12,24" stroke="#00d4aa" stroke-width="0.5" fill="none" opacity="0.4"/>
+        <circle cx="36" cy="36" r="14" stroke="#00d4aa" stroke-width="1.5" fill="rgba(0,212,170,0.06)"/>
+        <circle cx="36" cy="36" r="5" fill="#00d4aa"/>
+        <line x1="36" y1="22" x2="36" y2="28" stroke="#00d4aa" stroke-width="1.5"/>
+        <line x1="36" y1="44" x2="36" y2="50" stroke="#00d4aa" stroke-width="1.5"/>
+        <line x1="22" y1="36" x2="28" y2="36" stroke="#00d4aa" stroke-width="1.5"/>
+        <line x1="44" y1="36" x2="50" y2="36" stroke="#00d4aa" stroke-width="1.5"/>
+        <circle cx="36" cy="22" r="2" fill="#ffaa00"/>
+        <circle cx="36" cy="50" r="2" fill="#ffaa00"/>
+        <circle cx="22" cy="36" r="2" fill="#ffaa00"/>
+        <circle cx="50" cy="36" r="2" fill="#ffaa00"/>
+      </svg>
+    </div>
+    <div class="logo-name">12ak_<span class="accent">H4ck</span></div>
+    <div class="logo-sub">F O R T R E S S &nbsp; S E C U R I T Y</div>
+    <div class="tagline" id="tagline"><span class="tagline-cursor"></span></div>
+  </div>
+
+  <div class="card">
+    <div class="threat-bar">
+      <div class="threat-dot"></div>
+      <div class="threat-text">SYSTÈME DE SURVEILLANCE ACTIF</div>
+      <div class="threat-status">EN LIGNE</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">IDENTIFIANT OPÉRATEUR</label>
+      <div class="field-wrap">
+        <span class="field-icon">⬡</span>
+        <input type="text" id="username" placeholder="entrez votre identifiant" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">CLÉ D'ACCÈS</label>
+      <div class="field-wrap">
+        <span class="field-icon">◈</span>
+        <input type="password" id="password" placeholder="••••••••••••">
+        <button class="eye-btn" onclick="togglePwd(this)" tabindex="-1">◉</button>
+      </div>
+    </div>
+
+    <div class="options-row">
+      <label class="remember">
+        <input type="checkbox" id="remember">
+        <span class="check-box"></span>
+        MAINTENIR SESSION
+      </label>
+    </div>
+
+    <button class="btn-login" id="btn-login" onclick="doLogin()">
+      <span>ACCÈS FORTRESS</span>
+      <div class="loader">
+        <div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div>
+      </div>
+    </button>
+
+    <div class="error-msg" id="error-msg">⚠ ACCÈS REFUSÉ — IDENTIFIANTS INVALIDES</div>
+
+    <div class="sys-info">
+      <div class="sys-item"><div class="sys-dot"></div>AUTH SERVEUR-SIDE</div>
+      <div class="sys-item"><div class="sys-dot"></div>SESSION HTTPONLY</div>
+      <div class="sys-item"><div class="sys-dot"></div>TOKEN URL REQUIS</div>
+      <div class="sys-item"><div class="sys-dot" style="background:var(--amber)"></div>LOGS ACTIVÉS</div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-left">
+    <span class="status-ok">● SERVEUR EN LIGNE</span>
+    <span>AGENTS : <span id="agent-count-login">—</span></span>
+  </div>
+  <div class="status-right">
+    <span class="status-time" id="clock-login">--:--:--</span>
+    <span style="opacity:0.4">12ak_H4ck Fortress v3.0</span>
+  </div>
+</div>
+
+<script>
+// ══ Le token vient du serveur via window._ACCESS_TOKEN (injecté dans la réponse)
+const ACCESS_TOKEN = window._ACCESS_TOKEN || new URLSearchParams(window.location.search).get('token') || '';
+
+// ══ CANVAS PARTICLES
+const canvas=document.getElementById('bg-canvas');
+const ctx=canvas.getContext('2d');
+let W,H;
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+const nodes=Array.from({length:60},()=>({
+  x:Math.random()*1920,y:Math.random()*1080,
+  vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,
+  r:Math.random()*2+1,opacity:Math.random()*0.4+0.1
+}));
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<180){ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);
+        ctx.strokeStyle=`rgba(0,212,170,${(1-d/180)*0.08})`;ctx.lineWidth=0.5;ctx.stroke();}
+    }
+  }
+  nodes.forEach(n=>{
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,212,170,${n.opacity})`;ctx.fill();
+    n.x+=n.vx;n.y+=n.vy;
+    if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;
+  });
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ══ TYPING
+const lines=["BLUE TEAM EDR — SURVEILLANCE ACTIVE","PROTECTION ENDPOINT TEMPS RÉEL","ZERO TRUST ARCHITECTURE","THREAT HUNTING & RESPONSE"];
+let li=0,ci=0,del=false;
+const tel=document.getElementById('tagline');
+function typeIt(){
+  const cur=lines[li];
+  if(!del){ci++;tel.innerHTML=cur.slice(0,ci)+'<span class="tagline-cursor"></span>';
+    if(ci>=cur.length){del=true;setTimeout(typeIt,2000);return;}setTimeout(typeIt,55);}
+  else{ci--;tel.innerHTML=cur.slice(0,ci)+'<span class="tagline-cursor"></span>';
+    if(ci<=0){del=false;li=(li+1)%lines.length;setTimeout(typeIt,400);return;}setTimeout(typeIt,25);}
+}
+setTimeout(typeIt,1000);
+
+// ══ CLOCK
+setInterval(()=>{document.getElementById('clock-login').textContent=new Date().toTimeString().slice(0,8);},500);
+
+// ══ TOGGLE PASSWORD
+function togglePwd(btn){
+  const inp=document.getElementById('password');
+  inp.type=inp.type==='password'?'text':'password';
+  btn.textContent=inp.type==='password'?'◉':'◎';
+}
+
+// ══ LOGIN — tout se passe côté serveur, aucun mot de passe dans ce fichier
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+async function doLogin(){
+  const user=document.getElementById('username').value.trim();
+  const pwd=document.getElementById('password').value;
+  const btn=document.getElementById('btn-login');
+  const err=document.getElementById('error-msg');
+
+  if(!user||!pwd){
+    err.textContent='⚠ REMPLISSEZ TOUS LES CHAMPS';
+    err.style.display='block';return;
+  }
+
+  btn.classList.add('loading');
+  err.style.display='none';
+
+  try{
+    const r=await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user,pwd,token:ACCESS_TOKEN})
+    });
+    const d=await r.json();
+    if(d.ok){
+      btn.style.borderColor='var(--teal)';
+      btn.style.boxShadow='0 0 30px rgba(0,212,170,0.4)';
+      btn.querySelector('span').textContent='✓ ACCÈS ACCORDÉ';
+      setTimeout(()=>{window.location.href='/dashboard';},600);
+    } else {
+      btn.classList.remove('loading');
+      err.textContent='⚠ ACCÈS REFUSÉ — '+((d.error||'identifiants invalides').toUpperCase());
+      err.style.display='block';
+      err.style.animation='none';void err.offsetWidth;err.style.animation='shake 0.3s ease';
+      document.getElementById('password').value='';
+      document.getElementById('password').focus();
+    }
+  }catch(e){
+    btn.classList.remove('loading');
+    err.textContent='⚠ ERREUR RÉSEAU — SERVEUR INJOIGNABLE';
+    err.style.display='block';
+  }
+}
+
+// ══ STATUS agents
+async function checkStatus(){
+  try{
+    const r=await fetch('/api/stats',{signal:AbortSignal.timeout(2000)});
+    if(r.ok){const d=await r.json();document.getElementById('agent-count-login').textContent=Object.keys(d.agents||{}).length;}
+  }catch(e){}
+}
+checkStatus();setInterval(checkStatus,10000);
+</script>
+</body>
+</html>
