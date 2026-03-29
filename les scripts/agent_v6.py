@@ -54,7 +54,7 @@ except ImportError:
 # ══════════════════════════════════════════════════════════════════════
 
 # ─── Serveur Central ──────────────────────────────────────────────────────
-SERVER_IP   = "54.147.128.163"   # ← IP de ton serveur EC2 (à modifier si changement)
+SERVER_IP   = " IP "   # ← IP de ton serveur (à modifier si changement)
 SERVER_PORT = 9999               # Port HTTP agents → serveur
 WS_PORT     = 9998               # Port WebSocket (ordres serveur → agent)
 AGENT_NAME  = socket.gethostname()
